@@ -1,0 +1,3674 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIST Cleaner Suite</title>
+<style>
+  :root {
+    --bg: #0B1622;
+    --bg-2: #0e1c2c;
+    --accent: #007bff;
+    --accent-hover: #1a86ff;
+    --cyan: #22d3ee;
+    --green: #16a34a;
+    --line: rgba(0, 123, 255, .35);
+    --topbar: 54px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: #fff;
+    font-family: "JetBrains Mono", "Share Tech Mono", Consolas, Monaco, monospace;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(to bottom, rgba(255,255,255,.025) 0, rgba(255,255,255,.025) 1px, transparent 1px, transparent 3px);
+    pointer-events: none;
+    z-index: 5;
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(0,123,255,.18), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(34,211,238,.08), transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .hidden { display: none !important; }
+
+  #home {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+  }
+  .brand {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .brand .tag {
+    display: inline-block;
+    font-size: .72rem;
+    letter-spacing: .28em;
+    color: var(--cyan);
+    border: 1px solid rgba(34,211,238,.4);
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+  }
+  .brand h1 {
+    margin: 0 0 12px 0;
+    font-size: clamp(1.9rem, 6vw, 3rem);
+    font-weight: 800;
+    letter-spacing: .06em;
+    color: var(--accent);
+    text-shadow: 0 0 18px rgba(0,123,255,.7), 0 0 42px rgba(0,123,255,.35);
+  }
+  .brand h1 span { color: var(--cyan); text-shadow: 0 0 18px rgba(34,211,238,.6); }
+  .brand p {
+    margin: 0;
+    color: rgba(255,255,255,.55);
+    font-size: .9rem;
+    letter-spacing: .04em;
+  }
+  .choices {
+    width: 100%;
+    max-width: 1180px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
+  }
+  .choice {
+    position: relative;
+    text-align: left;
+    font-family: inherit;
+    color: #fff;
+    cursor: pointer;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 28px 26px 24px 26px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 24px rgba(0,123,255,.06);
+    transition: transform .2s, border-color .2s, box-shadow .2s, background .2s;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  .choice::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), var(--cyan), transparent);
+    opacity: .7;
+  }
+  .choice:hover, .choice:focus-visible {
+    transform: translateY(-4px);
+    border-color: var(--cyan);
+    background: rgba(0,123,255,.09);
+    box-shadow: 0 0 34px rgba(34,211,238,.2);
+    outline: none;
+  }
+  .choice .idx {
+    font-size: .72rem;
+    letter-spacing: .24em;
+    color: rgba(255,255,255,.4);
+    margin-bottom: 16px;
+    display: block;
+  }
+  .choice .ico {
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 12px;
+    background: rgba(0,123,255,.15);
+    border: 1px solid rgba(0,123,255,.5);
+    color: var(--accent-hover);
+    margin-bottom: 18px;
+  }
+  .choice .ico svg { width: 26px; height: 26px; }
+  .choice h2 {
+    margin: 0 0 10px 0;
+    font-size: 1.22rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  .choice p {
+    margin: 0 0 18px 0;
+    flex: 1;
+    font-size: .84rem;
+    line-height: 1.6;
+    color: rgba(255,255,255,.6);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .choice .go {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: .82rem; font-weight: 700; letter-spacing: .08em;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+  .choice .go svg { width: 16px; height: 16px; transition: transform .2s; }
+  .choice:hover .go svg { transform: translateX(5px); }
+  .foot {
+    margin-top: 40px;
+    font-size: .72rem;
+    letter-spacing: .18em;
+    color: rgba(255,255,255,.3);
+    text-transform: uppercase;
+  }
+
+  #viewer {
+    position: relative;
+    z-index: 1;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .topbar {
+    position: relative;
+    z-index: 20;
+    height: var(--topbar);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 14px;
+    background: rgba(11,22,34,.96);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 20px rgba(0,123,255,.12);
+  }
+  .home-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: inherit; font-size: .82rem; font-weight: 700; letter-spacing: .06em;
+    color: #fff;
+    background: rgba(0,123,255,.15);
+    border: 1px solid rgba(0,123,255,.5);
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+  }
+  .home-btn:hover { background: rgba(0,123,255,.32); border-color: var(--cyan); }
+  .home-btn svg { width: 16px; height: 16px; }
+  .crumb {
+    font-size: .8rem;
+    letter-spacing: .08em;
+    color: rgba(255,255,255,.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .crumb b { color: var(--cyan); font-weight: 700; }
+  .frames {
+    height: calc(100% - var(--topbar));
+  }
+  .frames iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: var(--bg);
+  }
+  button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+
+  @media (max-width: 960px) {
+    .choices { grid-template-columns: 1fr; max-width: 560px; }
+  }
+  @media (max-width: 680px) {
+    .choices { grid-template-columns: 1fr; gap: 16px; }
+    .choice { padding: 22px 20px 20px 20px; }
+    .brand { margin-bottom: 28px; }
+    .crumb span.long { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<main id="home">
+  <div class="brand">
+    <span class="tag">Ferramentas Lua &amp; Projetos</span>
+    <h1>MIST <span>CLEANER</span> SUITE</h1>
+    <p>Escolhe a ferramenta que queres usar</p>
+  </div>
+
+  <div class="choices">
+    <button class="choice" type="button" data-app="shx" id="chooseShx">
+      <span class="idx">01 / SHX</span>
+      <div class="ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/></svg>
+      </div>
+      <h2>Cleaner SHX v4</h2>
+      <p>Deteta automaticamente Lua descompilado (SHXn_m, goto SHX_LABEL, cabeçalhos [AI CLEANUP]) e limpa apenas esses ficheiros. Aceita ficheiros, pastas e ZIPs, com diff, relatório e ZIP final.</p>
+      <span class="go">Abrir
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </button>
+
+    <button class="choice" type="button" data-app="comments" id="chooseComments">
+      <span class="idx">02 / COMENTÁRIOS</span>
+      <div class="ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H8a2 2 0 0 1-1.42-.587l-2.6-2.6a2 2 0 0 1 0-2.83l7.6-7.6a2 2 0 0 1 2.83 0l4.6 4.6a2 2 0 0 1 0 2.83l-4 4"/><path d="M6 16l3.5 3.5"/><path d="M2 22l4-4"/></svg>
+      </div>
+      <h2>Cleaner (Remove Comentários)</h2>
+      <p>Remove comentários de código Lua, JS, TS, JSX, TSX e Python. Cola o código, envia ficheiros, pastas ou ZIPs (incluindo ZIPs aninhados) e descarrega o ZIP completo limpo.</p>
+      <span class="go">Abrir
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </button>
+    <button class="choice" type="button" data-app="bundle" id="chooseBundle">
+      <span class="idx">03 / BUNDLE</span>
+      <div class="ico">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      </div>
+      <h2>Bundle Studio (Projeto → MD / TXT / PDF)</h2>
+      <p>Importa um ZIP, pasta ou ficheiros e junta tudo num único documento Markdown, TXT ou PDF, com índice, manifesto, imagens embutidas, regras de ignorar, pré-visualização e inspetor. Tudo local no browser.</p>
+      <span class="go">Abrir
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </span>
+    </button>
+  </div>
+
+  <div class="foot">MIST GOAT 🐐</div>
+</main>
+
+<section id="viewer" class="hidden">
+  <div class="topbar">
+    <button class="home-btn" type="button" id="homeBtn" title="Voltar à página inicial">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Início
+    </button>
+    <div class="crumb"><span class="long">MIST CLEANER SUITE / </span><b id="crumbName"></b></div>
+  </div>
+  <div class="frames" id="frames"></div>
+</section>
+
+<script type="text/plain" id="src-shx"><!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cleaner SHX v4 — Automatic detection of decompiled Lua</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/lua.min.js"><\/script>
+<style>
+  :root { --accent:#007bff; --accent-hover:#1a86ff; --danger:#dc2626; --success:#16a34a; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:#0B1622; color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .container { max-width:1200px; margin:0 auto; padding:48px 16px; }
+  .header { display:flex; align-items:center; margin-bottom:8px; }
+  h1 { font-size:2.1rem; font-weight:700; color:var(--accent); text-shadow:0 0 12px rgba(0,123,255,.6);
+    display:flex; align-items:center; gap:10px; margin:0; }
+  h1 svg { width:26px; height:26px; }
+  .subtitle { color:rgba(255,255,255,.55); font-size:.92rem; margin:0 0 24px 0; line-height:1.5; }
+  .cyber-glass { background:rgba(255,255,255,.04); border:1px solid rgba(0,123,255,.35); border-radius:16px;
+    padding:24px; backdrop-filter:blur(6px); box-shadow:0 0 24px rgba(0,123,255,.06); position:relative; }
+  .space-y > * + * { margin-top:24px; }
+  h2 { font-size:1.2rem; font-weight:600; margin:0 0 16px 0; }
+  .hidden { display:none !important; }
+
+  /* Dropzone */
+  .dropzone { border:2px dashed var(--accent); border-radius:12px; padding:34px 20px; text-align:center;
+    transition:background .2s,border-color .2s,box-shadow .2s; }
+  .dropzone.drag-over { background:rgba(0,123,255,.12); border-color:var(--accent-hover); box-shadow:0 0 20px rgba(0,123,255,.3); }
+  .dropzone svg.big { width:46px; height:46px; margin:0 auto 8px auto; display:block; color:var(--accent); }
+  .dropzone p { color:rgba(255,255,255,.85); margin:0 0 4px 0; }
+  .dropzone .hint { font-size:.8rem; color:rgba(255,255,255,.4); }
+  .pick-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:8px;
+    cursor:pointer; font-weight:700; color:#fff; transition:background .2s,opacity .2s; font-family:inherit; }
+  .btn svg { width:18px; height:18px; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-primary { background:var(--accent); padding:13px 22px; font-size:1rem; }
+  .btn-primary:hover:not(:disabled) { background:var(--accent-hover); }
+  .btn-sm { padding:8px 12px; font-size:.85rem; }
+  .btn-blue { background:var(--accent); } .btn-blue:hover:not(:disabled){ background:var(--accent-hover); }
+  .btn-green { background:var(--success); } .btn-green:hover:not(:disabled){ background:#15803d; }
+  .btn-outline { background:transparent; border:1px solid rgba(255,255,255,.25); color:rgba(255,255,255,.85); }
+  .btn-outline:hover:not(:disabled){ background:rgba(255,255,255,.08); }
+  .btn-pick { background:rgba(0,123,255,.15); border:1px solid rgba(0,123,255,.5); padding:10px 16px; font-size:.9rem; }
+  .btn-pick:hover { background:rgba(0,123,255,.3); }
+
+  /* Stats */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px; }
+  .stat { background:#171f2a; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px 16px; }
+  .stat .n { font-size:1.7rem; font-weight:800; line-height:1.1; }
+  .stat .l { font-size:.78rem; color:rgba(255,255,255,.5); margin-top:2px; }
+  .stat.obf .n { color:var(--warn); } .stat.clean .n { color:var(--success); } .stat.other .n { color:rgba(255,255,255,.55); }
+
+  /* Options */
+  .opts { display:flex; gap:18px; flex-wrap:wrap; margin:0 0 16px 0; }
+  .opt { display:flex; align-items:center; gap:8px; font-size:.88rem; cursor:pointer; color:rgba(255,255,255,.85); }
+  .opt input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+  .opt small { color:rgba(255,255,255,.4); }
+
+  .toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .filters { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.7);
+    padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit; font-size:.8rem; font-weight:600; }
+  .chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .search-input { flex:1; min-width:200px; background:#2A2F3C; border:1px solid rgba(255,255,255,.12); border-radius:8px;
+    color:#fff; padding:9px 12px; font-family:inherit; font-size:.88rem; outline:none; }
+  .search-input:focus { border-color:var(--accent); }
+
+  .file-list { border:1px solid rgba(255,255,255,.1); border-radius:10px; max-height:380px; overflow-y:auto; background:#171f2a; }
+  .file-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.06); font-size:.87rem; }
+  .file-row:last-child { border-bottom:none; }
+  .file-row.dim { opacity:.55; }
+  .file-row input { width:16px; height:16px; accent-color:var(--accent); flex-shrink:0; }
+  .file-path { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { font-size:.7rem; padding:2px 9px; border-radius:999px; flex-shrink:0; font-weight:600; }
+  .badge.obf { background:rgba(245,158,11,.18); color:var(--warn); }
+  .badge.clean { background:rgba(22,163,74,.18); color:#4ade80; }
+  .badge.copy { background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
+  .badge.done { background:rgba(0,123,255,.2); color:#60a5fa; }
+  .badge.fail { background:rgba(220,38,38,.2); color:#f87171; }
+  .meta { font-size:.72rem; color:rgba(255,255,255,.35); flex-shrink:0; }
+
+  /* Progress */
+  .progress { height:8px; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin:14px 0 6px 0; }
+  .progress > div { height:100%; width:0; background:linear-gradient(90deg,var(--accent),#22d3ee); transition:width .15s; }
+  .progress-label { font-size:.8rem; color:rgba(255,255,255,.55); }
+
+  /* Results */
+  .result-list { display:flex; flex-direction:column; gap:10px; }
+  .result-item { border:1px solid rgba(255,255,255,.1); border-radius:10px; background:#171f2a; overflow:hidden; }
+  .result-header { display:flex; align-items:center; gap:10px; padding:10px 14px; flex-wrap:wrap; }
+  .result-path { flex:1; font-size:.88rem; overflow-wrap:anywhere; }
+  .result-body { padding:0 14px 14px 14px; }
+  .warn-box { background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.35); color:#fbbf24; border-radius:8px;
+    padding:8px 12px; font-size:.8rem; margin:0 14px 10px 14px; }
+  pre { background:#2A2F3C; padding:16px; border-radius:8px; overflow:auto; font-size:.83rem; margin:0; max-height:440px; white-space:pre; }
+  code { color:rgba(255,255,255,.9); font-family:"JetBrains Mono",Consolas,Monaco,monospace; }
+  .hljs { background:transparent !important; padding:0 !important; }
+  .diff-container { background:#1a2330; border-radius:8px; overflow:auto; max-height:500px; font-size:.82rem;
+    font-family:"JetBrains Mono",Consolas,Monaco,monospace; line-height:1.5; }
+  .diff-line { display:flex; min-height:1.5em; }
+  .diff-prefix { width:28px; text-align:center; flex-shrink:0; user-select:none; padding:0 4px; }
+  .diff-content { white-space:pre-wrap; word-break:break-word; flex:1; }
+  .diff-line.equal { color:rgba(255,255,255,.5); } .diff-line.equal .diff-prefix { color:rgba(255,255,255,.15); }
+  .diff-line.removed { background:rgba(220,38,38,.1); } .diff-line.removed .diff-prefix { color:var(--danger); }
+  .diff-line.removed .diff-content { color:rgba(255,160,160,.8); }
+  .diff-line.added { background:rgba(22,163,74,.08); } .diff-line.added .diff-prefix { color:var(--success); }
+  .diff-line.added .diff-content { color:rgba(160,255,180,.8); }
+
+  #toast-container { position:fixed; bottom:24px; right:24px; left:24px; display:flex; flex-direction:column; align-items:flex-end; gap:10px; z-index:1000; pointer-events:none; }
+  .toast { background:#1c2733; border:1px solid var(--accent); border-radius:10px; padding:14px 18px; min-width:220px; max-width:340px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4); animation:slideIn .2s ease-out; }
+  .toast.destructive { border-color:var(--danger); } .toast.success { border-color:var(--success); }
+  .toast-title { font-weight:700; margin-bottom:4px; font-size:.95rem; } .toast-desc { font-size:.85rem; color:rgba(255,255,255,.75); }
+  @keyframes slideIn { from{transform:translateX(30px);opacity:0} to{transform:translateX(0);opacity:1} }
+  button:focus-visible,input:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8 5.8 21.3l2.4-7.4L2 9.4h7.6z"/></svg>
+      Cleaner SHX v4
+    </h1>
+  </div>
+  <p class="subtitle">Upload files, a folder or a <b>.zip</b>. The tool automatically detects decompiled <code>.lua</code> files (<code>SHXn_m</code>, <code>goto SHX_LABEL</code>, <code>[AI CLEANUP]</code> headers) and cleans <b>only those</b>. Files with already clean code, and everything else, remain <b>byte-for-byte identical</b>.</p>
+
+  <div class="space-y">
+    <!-- 1. INPUT -->
+    <div class="cyber-glass">
+      <div class="dropzone" id="dropzone">
+        <svg class="big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p><b>Drag here</b> files, folders or a ZIP</p>
+        <p class="hint">ZIPs (including ZIPs within ZIPs) are automatically opened</p>
+        <div class="pick-row">
+          <button class="btn btn-pick" id="pickFilesBtn" type="button">📄 Files</button>
+          <button class="btn btn-pick" id="pickFolderBtn" type="button">📁 Folder</button>
+          <button class="btn btn-pick" id="pickZipBtn" type="button">🗜️ ZIP</button>
+        </div>
+        <input type="file" id="filesInput" class="hidden" multiple>
+        <input type="file" id="folderInput" class="hidden" webkitdirectory directory multiple>
+        <input type="file" id="zipInput" class="hidden" accept=".zip,application/zip,application/x-zip-compressed" multiple>
+      </div>
+      <div class="hidden" id="loadProgress">
+        <div class="progress"><div id="loadBar"></div></div>
+        <div class="progress-label" id="loadLabel"></div>
+      </div>
+    </div>
+
+    <!-- 2. ANALYSIS -->
+    <div class="cyber-glass hidden" id="analysisCard">
+      <h2>Automatic Analysis</h2>
+      <div class="stats" id="stats"></div>
+
+      <div class="opts">
+        <label class="opt"><input type="checkbox" id="optChains" checked> Simplify chains <small>(safe)</small></label>
+        <label class="opt"><input type="checkbox" id="optIndent" checked> Reformat indentation</label>
+        <label class="opt"><input type="checkbox" id="optComments"> Also remove normal comments</label>
+      </div>
+
+      <div class="toolbar">
+        <div class="filters" id="filters"></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-outline btn-sm" id="selectAllBtn" type="button">Select all</button>
+          <button class="btn btn-outline btn-sm" id="selectNoneBtn" type="button">Deselect all</button>
+        </div>
+        <input class="search-input" id="search" type="text" placeholder="Filter by name or path…" aria-label="Filter files">
+      </div>
+      <div class="file-list" id="fileList"></div>
+
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="cleanBtn" type="button">🧹 Clean obfuscated files</button>
+        <button class="btn btn-outline btn-sm" id="resetBtn" type="button">Restart</button>
+      </div>
+      <p class="progress-label" style="margin-top:10px">Only files marked as <b style="color:var(--warn)">obfuscated</b> are processed. You can uncheck any one in the list.</p>
+      <div class="hidden" id="cleanProgress">
+        <div class="progress"><div id="cleanBar"></div></div>
+        <div class="progress-label" id="cleanLabel"></div>
+      </div>
+    </div>
+
+    <!-- 3. RESULTS -->
+    <div class="cyber-glass hidden" id="resultsCard">
+      <div class="toolbar">
+        <h2 style="margin:0">Results</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-outline" id="reportBtn" type="button">📄 Report (.txt)</button>
+          <button class="btn btn-sm btn-green" id="zipBtn" type="button">⬇ Download full ZIP</button>
+        </div>
+      </div>
+      <p class="progress-label" id="resultsSummary" style="margin:0 0 12px 0"></p>
+      <div class="result-list" id="resultList"></div>
+    </div>
+  </div>
+</div>
+<div id="toast-container" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+ * SHX ENGINE - safe detection + cleaning (option A)
+ * No dependencies. Works in browser and Node.
+ * ============================================================ */
+(function (root) {
+  "use strict";
+
+  /* ---------- 1. Minimum Lua tokenizer (safe strings/comments) ---------- */
+  // Returns a list of segments {t:'code'|'str'|'comment', s:'text'}
+  function segment(src) {
+    const out = [];
+    let i = 0, n = src.length, buf = "";
+    const flush = () => { if (buf) { out.push({ t: "code", s: buf }); buf = ""; } };
+    const longBracket = (pos) => {
+      const m = /^\[(=*)\[/.exec(src.slice(pos, pos + 40));
+      return m ? m[1].length : -1;
+    };
+    while (i < n) {
+      const c = src[i];
+      if (c === "-" && src[i + 1] === "-") {
+        flush();
+        const lb = longBracket(i + 2);
+        let end;
+        if (lb >= 0) {
+          const close = "]" + "=".repeat(lb) + "]";
+          const k = src.indexOf(close, i + 4 + lb);
+          end = k < 0 ? n : k + close.length;
+        } else {
+          const k = src.indexOf("\n", i);
+          end = k < 0 ? n : k;
+        }
+        out.push({ t: "comment", s: src.slice(i, end) });
+        i = end; continue;
+      }
+      if (c === '"' || c === "'") {
+        flush();
+        let j = i + 1;
+        while (j < n && src[j] !== c) { if (src[j] === "\\") j++; if (src[j] === "\n") break; j++; }
+        out.push({ t: "str", s: src.slice(i, j + 1) });
+        i = j + 1; continue;
+      }
+      if (c === "[") {
+        const lb = longBracket(i);
+        if (lb >= 0) {
+          flush();
+          const close = "]" + "=".repeat(lb) + "]";
+          const k = src.indexOf(close, i + 2 + lb);
+          const end = k < 0 ? n : k + close.length;
+          out.push({ t: "str", s: src.slice(i, end) });
+          i = end; continue;
+        }
+      }
+      buf += c; i++;
+    }
+    flush();
+    return out;
+  }
+
+  /* ---------- 2. Detection ---------- */
+  const RE_SHX_ID = /\bSHX\d+_\d+\b/g;
+  const RE_LABEL = /::SHX_LABEL_\w+::|\bgoto\s+SHX_LABEL_\w+/g;
+  const RE_HEADER = /\[AI CLEANUP\]\s*Decompiled Lua/;
+  const RE_LOCAL_DECL = /^\s*local\s+SHX\d+_\d+\s*(,\s*SHX\d+_\d+\s*)*$/m;
+
+  function detect(src) {
+    // Only counts identifiers OUTSIDE strings/comments
+    let ids = 0, labels = 0;
+    for (const seg of segment(src)) {
+      if (seg.t !== "code") continue;
+      ids += (seg.s.match(RE_SHX_ID) || []).length;
+      labels += (seg.s.match(RE_LABEL) || []).length;
+    }
+    const header = RE_HEADER.test(src);
+    const decl = RE_LOCAL_DECL.test(src);
+    // Criterion: 'local SHXn_m,...' declaration OR (>=5 ids) OR header + >=1 id
+    const obfuscated = decl || ids >= 5 || (header && ids >= 1);
+    return { obfuscated, ids, labels, header };
+  }
+
+  /* ---------- 3. Cleaning ---------- */
+  const DECOMP_COMMENT_RE = [
+    /^[ \t]*-- \[AI CLEANUP\][^\n]*\n(?:[ \t]*-- \d\.[^\n]*\n)*/gm,
+    /^[ \t]*-- \[FIX IF ERROR\][^\n]*\n?/gm,
+    /^[ \t]*--\s*\[AI CLEANUP\][^\n]*$/gm,
+  ];
+
+  function stripDecompilerNoise(src) {
+    let s = src;
+    for (const re of DECOMP_COMMENT_RE) s = s.replace(re, "");
+    // lines with only spaces left by the header inside functions
+    s = s.replace(/^[ \t]+\n/gm, "\n");
+    return s;
+  }
+
+  // Applies fn only to 'code' parts, preserving strings/comments
+  function mapCode(src, fn) {
+    return segment(src).map(seg => seg.t === "code" ? fn(seg.s) : seg.s).join("");
+  }
+
+  // Removes 'local SHXa, SHXb, ...' (pure declarations without assignment)
+  // -> will be re-declared with final names when necessary.
+  // Here we only rename; the declaration is kept with the new names.
+
+  const RESERVED = new Set(("and break do else elseif end false for function goto if in local nil not or repeat return then true until while continue").split(" "));
+
+  function collectIdentifiers(src) {
+    const set = new Set();
+    for (const seg of segment(src)) {
+      if (seg.t !== "code") continue;
+      const m = seg.s.match(/[A-Za-z_][A-Za-z0-9_]*/g);
+      if (m) m.forEach(x => set.add(x));
+    }
+    return set;
+  }
+
+  // Renames SHXn_1 -> g<n> (global/chunk upvalues) and SHXn_2+ -> per function
+  // We maintain semantics: 1-to-1 and injective renaming (without collisions).
+  function renameIdentifiers(src) {
+    const existing = collectIdentifiers(src);
+    const used = new Set(existing);
+    const map = new Map();
+    const pick = (base) => {
+      let name = base, k = 2;
+      while (used.has(name) || RESERVED.has(name)) name = base + "_" + (k++);
+      used.add(name);
+      return name;
+    };
+    return mapCode(src, code => code.replace(/\bSHX(\d+)_(\d+)\b/g, (all, idx, lvl) => {
+      if (map.has(all)) return map.get(all);
+      // level 1 = file scope; levels >=2 = function scope
+      const base = lvl === "1" ? "g" + idx : "v" + idx + (lvl === "2" ? "" : "_l" + lvl);
+      const nm = pick(base);
+      map.set(all, nm);
+      return nm;
+    }));
+  }
+
+  // Labels: SHX_LABEL_10 -> lbl_10 (kept, only marked for review)
+  function renameLabels(src) {
+    return mapCode(src, code => code
+      .replace(/::SHX_LABEL_(\w+)::/g, "::lbl_$1::")
+      .replace(/\bgoto\s+SHX_LABEL_(\w+)/g, "goto lbl_$1"));
+  }
+
+  /* ---------- 3a. Fix 'return' followed by code (invalid in Lua) ----------
+   * The decompiler emits 'return' in the middle of the block (followed by ::label::).
+   * 'do return end' is semantically identical and syntactically valid.
+   */
+  function fixMidBlockReturn(src) {
+    const lines = src.split("\n");
+    const isCodeLine = (l) => l.trim() !== "" && !/^\s*--/.test(l);
+    for (let i = 0; i < lines.length; i++) {
+      const m = /^(\s*)return(\s+[^\n]*?)?\s*$/.exec(lines[i]);
+      if (!m) continue;
+      let j = i + 1;
+      while (j < lines.length && !isCodeLine(lines[j])) j++;
+      if (j >= lines.length) continue;
+      const nxt = lines[j].trim();
+      // 'return' is only valid if the next token closes the block
+      if (/^(end|else|elseif|until)\b/.test(nxt)) continue;
+      lines[i] = m[1] + "do return" + (m[2] || "") + " end";
+    }
+    return lines.join("\n");
+  }
+
+  /* ---------- 3b. Copy propagation (safe) ----------
+   * Decompiler pattern (per line, within the same block):
+   *   R = <simple expr>          (global name, literal, field)
+   *   R = R.field / R = R(args)   (chains on R)
+   * We only collapse 100% safe cases: 'R = X' immediately followed
+   * by 'R = R.field' -> 'R = X.field'. And 'R = R(...)'.
+   * Everything else remains as is (identical behavior).
+   */
+  function collapseChains(src) {
+    const lines = src.split("\n");
+    const out = [];
+    const ID = "[A-Za-z_][A-Za-z0-9_]*";
+    for (let i = 0; i < lines.length; i++) {
+      const cur = lines[i];
+      const nxt = lines[i + 1];
+      const m1 = new RegExp("^(\\s*)(" + ID + ")\\s*=\\s*(" + ID + "(?:\\.[A-Za-z_]\\w*)*)\\s*$").exec(cur);
+      if (m1 && nxt !== undefined) {
+        const [, ind, r, rhs] = m1;
+        const m2 = new RegExp("^\\s*" + r + "\\s*=\\s*" + r + "((?:\\.[A-Za-z_]\\w*)+)\\s*$").exec(nxt);
+        if (m2) { lines[i + 1] = ind + r + " = " + rhs + m2[1]; continue; }
+      }
+      out.push(cur);
+    }
+    return out.join("\n");
+  }
+  function collapseChainsFixpoint(src) {
+    let prev, cur = src, guard = 0;
+    do { prev = cur; cur = collapseChains(prev); } while (cur !== prev && ++guard < 50);
+    return cur;
+  }
+
+  /* ---------- 3b2. Temporary register inlining (conservative) ----------
+   * Pattern:   R = <simple expr>            (name/field/literal)
+   *           R(args)   |   R = R(args)     (immediate call)
+   * where R is a decompiler temporary register (v<n>) and the RHS is
+   * only name/field (no side effects). Only applies if R is NOT read later
+   * in the subsequent lines of the same block before being reassigned.
+   * Otherwise, everything remains as is.
+   */
+  function inlineCalls(src) {
+    const lines = src.split("\n");
+    const ID = "[A-Za-z_][A-Za-z0-9_]*";
+    const isReg = (n) => /^v\d+(_l\d+)?$/.test(n);
+    const simple = new RegExp("^(\\s*)(" + ID + ")\\s*=\\s*(" + ID + "(?:\\.[A-Za-z_]\\w*)*)\\s*$");
+    const reads = (line, r) => new RegExp("\\b" + r + "\\b").test(line);
+    for (let i = 0; i < lines.length - 1; i++) {
+      const m = simple.exec(lines[i]);
+      if (!m || !isReg(m[2])) continue;
+      const [, ind, r, rhs] = m;
+      // immediate call: 'R(args)'  (instruction)
+      const call = new RegExp("^\\s*" + r + "\\((.*)\\)\\s*$").exec(lines[i + 1]);
+      // or 'R = R(args)'
+      const call2 = new RegExp("^\\s*" + r + "\\s*=\\s*" + r + "\\((.*)\\)\\s*$").exec(lines[i + 1]);
+      const mm = call || call2;
+      if (!mm) continue;
+      const args = mm[1];
+      // args cannot use R (otherwise it would change the meaning)
+      if (reads(args, r)) continue;
+      // R cannot be read in subsequent lines before a new assignment (at the same level)
+      let safe = true;
+      const depth0 = (lines[i].match(/^\s*/)[0]).length;
+      for (let j = i + 2; j < lines.length && j < i + 40; j++) {
+        const L = lines[j];
+        const ind2 = (L.match(/^\s*/)[0]).length;
+        if (L.trim() === "") continue;
+        if (new RegExp("^\\s*" + r + "\\s*=").test(L) && !reads(L.replace(new RegExp("^\\s*" + r + "\\s*="), ""), r)) break; // reassigned without reading
+        if (/^\s*(end|else|elseif|until)\b/.test(L) && ind2 < depth0) break;
+        if (reads(L, r)) { safe = false; break; }
+        if (/^\s*(function|::)/.test(L) || /\bgoto\b/.test(L)) { safe = false; break; }
+      }
+      if (!safe) continue;
+      // result assigned to R (call2) requires R to be read later -> we do not apply
+      if (call2) continue;
+      lines[i + 1] = ind + rhs + "(" + args + ")";
+      lines[i] = null;
+      i++;
+    }
+    return lines.filter(l => l !== null).join("\n");
+  }
+
+  /* ---------- 3c. Formatting ---------- */
+  function reindent(src) {
+    const lines = src.split("\n");
+    let depth = 0;
+    const OPEN = /^(function\b|local\s+function\b|if\b.*\bthen\s*$|for\b.*\bdo\s*$|while\b.*\bdo\s*$|do\s*$|repeat\s*$)/;
+    const out = [];
+    let inLong = false;
+    for (let raw of lines) {
+      if (inLong) { out.push(raw); if (/\]\]/.test(raw)) inLong = false; continue; }
+      const t = raw.trim();
+      if (t === "") { out.push(""); continue; }
+      // multi-line long strings: do not touch
+      const lbOpen = /\[=*\[/.test(t) && !/\]=*\]/.test(t.slice(t.search(/\[=*\[/) + 2));
+      let d = depth;
+      if (/^(end\b|else\b|elseif\b|until\b)/.test(t)) d = Math.max(0, depth - 1);
+      out.push("  ".repeat(d) + t);
+      if (lbOpen) { inLong = true; continue; }
+      // depth adjustment
+      if (/^(end\b)/.test(t)) depth = Math.max(0, depth - 1);
+      else if (/^(else\b)/.test(t)) { /* mantém */ }
+      else if (/^(elseif\b.*\bthen\s*$)/.test(t)) { /* mantém */ }
+      else if (/^until\b/.test(t)) depth = Math.max(0, depth - 1);
+      else if (OPEN.test(t) || /\bfunction\s*\([^)]*\)\s*$/.test(t)) {
+        // 'function(...) ... end' on a single line does not open a block
+        if (!/\bend\s*\)?\s*,?\s*$/.test(t) || /^(if|for|while)\b/.test(t) && !/\bend\s*$/.test(t)) depth++;
+      } else if (/\bfunction\s*\([^)]*\)\s*$/.test(t)) depth++;
+      // lines ending with 'end)' close blocks opened by 'function(' at the end of another line
+      if (/^(end\s*[\),]*)$/.test(t) === false && /\bend\s*[\)\},]*\s*$/.test(t) && !/^end\b/.test(t)) {
+        // 'x = function() return 1 end' -> no depth change
+      }
+    }
+    return out.join("\n");
+  }
+
+  /* ---------- 4. Light validation (block balance) ---------- */
+  function validate(src) {
+    let opens = 0, closes = 0, paren = 0, brace = 0, brack = 0;
+    for (const seg of segment(src)) {
+      if (seg.t !== "code") continue;
+      const toks = seg.s.match(/[A-Za-z_][A-Za-z0-9_]*|[(){}\[\]]/g) || [];
+      // 'for/while ... do' count as 1 block: we count by 'do' (except for the 'do' of for/while ->
+      // we use a classic approach: function/if/do/repeat open; end/until close; for/while do not count ('do' counts)
+      for (const t of toks) {
+        if (t === "function" || t === "if" || t === "do" || t === "repeat") opens++;
+        else if (t === "end" || t === "until") closes++;
+        else if (t === "(") paren++; else if (t === ")") paren--;
+        else if (t === "{") brace++; else if (t === "}") brace--;
+        else if (t === "[") brack++; else if (t === "]") brack--;
+      }
+    }
+    // 'elseif' does not open (distinct token), 'then' does not count
+    const ok = opens === closes && paren === 0 && brace === 0 && brack === 0;
+    return { ok, opens, closes, paren, brace, brack };
+  }
+
+  /* ---------- 5. Pipeline ---------- */
+  function clean(src, opts) {
+    opts = Object.assign({ chains: true, reindent: true, keepLabelsNote: true }, opts || {});
+    const before = validate(src);
+    let s = src.replace(/\r\n/g, "\n");
+    const bytesBefore = s.length;
+    s = stripDecompilerNoise(s);
+    s = mapCode(s, fixMidBlockReturn);
+    if (opts.chains) { s = mapCode(s, collapseChainsFixpoint); s = mapCode(s, inlineCalls); }
+    if (opts.reindent) s = reindent(s);
+    s = s.replace(/\n{3,}/g, "\n\n").replace(/^\n+/, "");
+    if (!s.endsWith("\n")) s += "\n";
+    const after = validate(s);
+    const gotos = (s.match(/\bgoto\s+SHX_LABEL_\w+/g) || []).length;
+    // safety: if block balance worsened -> failure (keeps original)
+    const safe = after.ok || (!before.ok && after.opens - after.closes === before.opens - before.closes);
+    const bytesSaved = Math.max(0, bytesBefore - s.length);
+    return { code: s, safe, before, after, gotos, bytesSaved };
+  }
+
+  const api = { detect, clean, validate, segment };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.SHX = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+<\/script>
+
+<script>
+"use strict";
+/* ============================================================
+ * APP — loading (files / folder / ZIP), detection and UI
+ * ============================================================ */
+const $ = (id) => document.getElementById(id);
+const HARD_LIMIT = 8 * 1024 * 1024;         // 8 MB per text file
+const MAX_ZIP_DEPTH = 3;                    // ZIPs within ZIPs
+const TEXT_EXT = new Set(["lua"]);          // only these are analyzed
+const HL_OK = () => typeof hljs !== "undefined" && hljs.getLanguage && hljs.getLanguage("lua");
+
+let entries = [];      // {id,path,name,ext,size,kind,original,bytes,cleaned,info,selected,status,note}
+let rootName = "project";
+let filter = "all";
+let query = "";
+let uid = 0;
+
+/* ---------- utilities ---------- */
+function esc(t){ return String(t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function toast(title, desc, variant){
+  const c=$("toast-container"), t=document.createElement("div");
+  t.className="toast"+(variant?" "+variant:"");
+  t.innerHTML=`<div class="toast-title">${esc(title)}</div><div class="toast-desc">${esc(desc)}</div>`;
+  c.appendChild(t);
+  setTimeout(()=>{t.style.opacity="0";t.style.transition="opacity .2s";setTimeout(()=>t.remove(),200);},3200);
+}
+function downloadBlob(blob, name){
+  const u=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(u);},1000);
+}
+const ext = (n)=>{ const p=n.split("."); return p.length>1?p.pop().toLowerCase():""; };
+const baseName = (p)=>p.split("/").pop();
+const tick = ()=>new Promise(r=>setTimeout(r,0));           // cede a UI entre tarefas
+function setBar(barId, labelId, wrapId, pct, label){
+  $(wrapId).classList.remove("hidden");
+  $(barId).style.width=Math.max(0,Math.min(100,pct))+"%";
+  $(labelId).textContent=label||"";
+}
+function normPath(p){ return p.replace(/\\/g,"/").replace(/^\.?\//,"").replace(/\/{2,}/g,"/"); }
+
+/* ---------- read file from browser ---------- */
+function readAsText(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsText(file); });
+}
+function readAsBuffer(file){
+  return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(r.error); r.readAsArrayBuffer(file); });
+}
+
+/* ---------- add entry (detects if it's obfuscated .lua) ---------- */
+async function addEntry(path, dataBytes /*Uint8Array*/, size){
+  path = normPath(path);
+  const name = baseName(path), e = ext(name);
+  const item = { id:"e"+(uid++), path, name, ext:e, size, bytes:dataBytes, original:null,
+                 cleaned:null, info:null, selected:false, status:"copy", note:"" };
+  if (TEXT_EXT.has(e) && size <= HARD_LIMIT) {
+    // UTF-8 decoding without losing bytes: we keep the original bytes for faithful copy
+    const txt = new TextDecoder("utf-8",{fatal:false}).decode(dataBytes);
+    item.original = txt;
+    item.info = SHX.detect(txt);
+    if (item.info.obfuscated) { item.status="obf"; item.selected=true; }
+    else item.status="clean";
+  }
+  entries.push(item);
+}
+
+/* ---------- ZIP (recursive) ---------- */
+async function ingestZip(buffer, prefix, depth, progress){
+  const zip = await JSZip.loadAsync(buffer);
+  const files = [];
+  zip.forEach((rel, f)=>{ if(!f.dir) files.push([rel,f]); });
+  for (let i=0;i<files.length;i++){
+    const [rel,f] = files[i];
+    const safe = normPath(rel);
+    if (safe.split("/").includes("..")) continue;            // protection against zip-slip
+    if (/(^|\/)__MACOSX(\/|$)|(^|\/)\.DS_Store$|(^|\/)\.DS_Store$|(^|\/)Thumbs\.db$/i.test(safe)) continue;
+    const bytes = await f.async("uint8array");
+    const full = prefix ? prefix+"/"+safe : safe;
+    if (ext(safe)==="zip" && depth < MAX_ZIP_DEPTH) {
+      try { await ingestZip(bytes, full.replace(/\.zip$/i,""), depth+1, progress); continue; } catch(_) {}
+    }
+    await addEntry(full, bytes, bytes.length);
+    if (i%25===0){ progress && progress(i/files.length, rel); await tick(); }
+  }
+}
+
+/* ---------- load File list (files, folder or zip) ---------- */
+async function loadFiles(fileArr){
+  fileArr = Array.from(fileArr||[]);
+  if (!fileArr.length) return;
+  entries = []; uid = 0;
+  $("resultsCard").classList.add("hidden"); $("resultList").innerHTML="";
+  $("cleanProgress").classList.add("hidden");
+
+  // root name
+  const first = fileArr[0];
+  const rp = first.webkitRelativePath || first._relativePath || "";
+  const isZip0 = fileArr.length===1 && ext(first.name)==="zip";
+  rootName = isZip0 ? first.name.replace(/\.zip$/i,"") : (rp.includes("/") ? rp.split("/")[0] : "project");
+
+  try {
+    for (let i=0;i<fileArr.length;i++){
+      const f = fileArr[i];
+      const rel = f.webkitRelativePath || f._relativePath || f.name;
+      setBar("loadBar","loadLabel","loadProgress",(i/fileArr.length)*100,`Reading ${i+1}/${fileArr.length}: ${rel}`);
+      const buf = await readAsBuffer(f);
+      const bytes = new Uint8Array(buf);
+      if (ext(f.name)==="zip") {
+        const prefix = isZip0 ? "" : rel.replace(/\.zip$/i,"");
+        await ingestZip(bytes, prefix, 0, (p,n)=>setBar("loadBar","loadLabel","loadProgress",((i+p)/fileArr.length)*100,`Opening ZIP: ${n}`));
+      } else {
+        await addEntry(rel, bytes, bytes.length);
+      }
+      await tick();
+    }
+  } catch(err){
+    toast("Error reading", err.message||String(err), "destructive");
+  }
+  $("loadProgress").classList.add("hidden");
+  if (!entries.length){ toast("No content","No files found.","destructive"); return; }
+  // If a ZIP has a single common root folder, keep it (original structure preserved)
+  entries.sort((a,b)=>a.path.localeCompare(b.path));
+  $("analysisCard").classList.remove("hidden");
+  render();
+  const o = entries.filter(e=>e.status==="obf").length;
+  toast("Analysis complete", `${entries.length} file(s) · ${o} obfuscated detected.`, o?"success":"");
+}
+
+/* ---------- Drag & drop (files, folders, zips) ---------- */
+function readDirEntry(dir, path, out){
+  return new Promise((resolve)=>{
+    const rd = dir.createReader(); const all=[];
+    const step = ()=> rd.readEntries(async (ents)=>{
+      if (!ents.length){
+        for (const en of all){
+          const p = path ? path+"/"+en.name : en.name;
+          if (en.isDirectory) await readDirEntry(en,p,out);
+          else await new Promise(r=>en.file(f=>{ f._relativePath=p; out.push(f); r(); }, ()=>r()));
+        }
+        resolve(); return;
+      }
+      all.push(...ents); step();
+    }, ()=>resolve());
+    step();
+  });
+}
+const dz = $("dropzone");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add("drag-over");}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove("drag-over");}));
+dz.addEventListener("drop", async (e)=>{
+  const items = e.dataTransfer.items;
+  const files = [];
+  if (items && items.length && items[0].webkitGetAsEntry){
+    const ents = Array.from(items).map(i=>i.webkitGetAsEntry()).filter(Boolean);
+    for (const en of ents){
+      if (en.isDirectory) await readDirEntry(en, en.name, files);
+      else await new Promise(r=>en.file(f=>{ f._relativePath=en.name; files.push(f); r(); }, ()=>r()));
+    }
+  } else files.push(...Array.from(e.dataTransfer.files));
+  loadFiles(files);
+});
+$("pickFilesBtn").onclick = ()=>$("filesInput").click();
+$("pickFolderBtn").onclick = ()=>$("folderInput").click();
+$("pickZipBtn").onclick = ()=>$("zipInput").click();
+["filesInput","folderInput","zipInput"].forEach(id=>$(id).addEventListener("change",e=>{ loadFiles(e.target.files); e.target.value=""; }));
+
+/* ---------- Render: statistics, filters and list ---------- */
+function render(){
+  const total = entries.length;
+  const obf = entries.filter(e=>e.status==="obf"||e.status==="done"||e.status==="fail").length;
+  const clean = entries.filter(e=>e.status==="clean").length;
+  const other = total-obf-clean;
+  $("stats").innerHTML =
+    `<div class="stat"><div class="n">${total}</div><div class="l">total files</div></div>
+     <div class="stat obf"><div class="n">${obf}</div><div class="l">obfuscated (SHX)</div></div>
+     <div class="stat clean"><div class="n">${clean}</div><div class="l">.lua already clean · untouched</div></div>
+     <div class="stat other"><div class="n">${other}</div><div class="l">others · direct copy</div></div>`;
+
+  const F = [["all","All"],["obf","Obfuscated"],["clean","Clean"],["copy","Others"]];
+  $("filters").innerHTML = F.map(([k,l])=>`<button class="chip ${filter===k?"active":""}" data-f="${k}" type="button">${l}</button>`).join("");
+  $("filters").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{filter=b.dataset.f;render();});
+
+  const list = $("fileList"); list.innerHTML="";
+  const shown = entries.filter(e=>{
+    if (query && !e.path.toLowerCase().includes(query.toLowerCase())) return false;
+    if (filter==="all") return true;
+    if (filter==="obf") return e.status==="obf"||e.status==="done"||e.status==="fail";
+    return e.status===filter;
+  });
+  if (!shown.length){ list.innerHTML='<div class="file-row dim">No files for this filter.</div>'; }
+  for (const e of shown){
+    const row=document.createElement("div");
+    const isObf = e.status==="obf"||e.status==="done"||e.status==="fail";
+    row.className="file-row"+(isObf?"":" dim");
+    const cb=document.createElement("input"); cb.type="checkbox"; cb.checked=e.selected; cb.disabled=!isObf;
+    cb.onchange=()=>{e.selected=cb.checked;updateCleanBtn();};
+    const p=document.createElement("span"); p.className="file-path"; p.textContent=e.path; p.title=e.path;
+    const b=document.createElement("span");
+    const map={obf:["obf","obfuscated"],clean:["clean","clean · untouched"],copy:["copy","direct copy"],done:["done","clean ✓"],fail:["fail","failed · original kept"]};
+    b.className="badge "+map[e.status][0]; b.textContent=map[e.status][1];
+    row.append(cb,p);
+    if (e.info && e.info.ids) { const m=document.createElement("span"); m.className="meta"; m.textContent=e.info.ids+" refs"; row.append(m); }
+    row.append(b);
+    list.appendChild(row);
+  }
+  updateCleanBtn();
+}
+function updateCleanBtn(){
+  const n = entries.filter(e=>e.selected && (e.status==="obf"||e.status==="fail")).length;
+  const b=$("cleanBtn"); b.disabled = n===0;
+  b.textContent = n? `🧹 Clean ${n} obfuscated file(s)` : "🧹 No obfuscated files to clean";
+}
+$("search").addEventListener("input",e=>{query=e.target.value;render();});
+$("selectAllBtn").onclick = ()=>{ entries.forEach(e=>{ if(e.status==="obf"||e.status==="fail") e.selected=true; }); render(); };
+$("selectNoneBtn").onclick = ()=>{ entries.forEach(e=>{ e.selected=false; }); render(); };
+$("resetBtn").onclick = ()=>{ entries=[]; $("analysisCard").classList.add("hidden"); $("resultsCard").classList.add("hidden"); $("resultList").innerHTML=""; };
+
+/* ---------- Cleaning (only obfuscated) ---------- */
+function stripPlainComments(code){
+  // removes normal Lua comments (outside strings) — optional
+  return SHX.segment(code).map(s=>s.t==="comment"?"":s.s).join("").replace(/[ \t]+$/gm,"").replace(/\n{3,}/g,"\n\n");
+}
+$("cleanBtn").onclick = async ()=>{
+  const targets = entries.filter(e=>e.selected && (e.status==="obf"||e.status==="fail"));
+  if (!targets.length) return;
+  const opts = { chains:$("optChains").checked, reindent:$("optIndent").checked };
+  $("cleanBtn").disabled = true;
+  let ok=0, bad=0;
+  for (let i=0;i<targets.length;i++){
+    const e = targets[i];
+    setBar("cleanBar","cleanLabel","cleanProgress",(i/targets.length)*100,`Cleaning ${i+1}/${targets.length}: ${e.path}`);
+    await tick();
+    try {
+      const r = SHX.clean(e.original, opts);
+      let code = r.code;
+      if ($("optComments").checked) code = stripPlainComments(code);
+      e.gotos = r.gotos;
+      e.bytesSaved = code.length < e.original.length ? (e.original.length - code.length) : 0;
+      if (r.safe) { e.cleaned = code; e.status="done"; ok++; }
+      else { e.cleaned = null; e.status="fail"; e.note="Block validation failed — original kept."; bad++; }
+    } catch(err){ e.cleaned=null; e.status="fail"; e.note=err.message; bad++; }
+  }
+  setBar("cleanBar","cleanLabel","cleanProgress",100,`Complete: ${ok} cleaned`+(bad?`, ${bad} failed`:""));
+  render(); renderResults();
+  $("resultsCard").classList.remove("hidden");
+  toast(bad?"Completed with warnings":"Success", `${ok} cleaned`+(bad?` · ${bad} original kept`:""), bad?"destructive":"success");
+};
+
+/* ---------- Diff (LCS) ---------- */
+function computeDiff(a,b){
+  const o=a.split("\n"), c=b.split("\n"), m=o.length, n=c.length;
+  if (m>3000||n>3000) return null;
+  const dp=[]; for(let r=0;r<=m;r++) dp.push(new Uint32Array(n+1));
+  for(let r=m-1;r>=0;r--) for(let s=n-1;s>=0;s--)
+    dp[r][s]= o[r]===c[s] ? dp[r+1][s+1]+1 : Math.max(dp[r+1][s],dp[r][s+1]);
+  const out=[]; let r=0,s=0;
+  while(r<m&&s<n){
+    if(o[r]===c[s]){out.push({t:"equal",x:o[r]});r++;s++;}
+    else if(dp[r+1][s]>=dp[r][s+1]){out.push({t:"removed",x:o[r]});r++;}
+    else{out.push({t:"added",x:c[s]});s++;}
+  }
+  while(r<m){out.push({t:"removed",x:o[r++]});} while(s<n){out.push({t:"added",x:c[s++]});}
+  return out;
+}
+function renderDiff(d){
+  if(!d) return '<div style="padding:16px;color:rgba(255,255,255,.45)">File too large for diff (&gt; 3000 lines). Use "View code".</div>';
+  return d.map(l=>`<div class="diff-line ${l.t}"><span class="diff-prefix">${l.t==="removed"?"-":l.t==="added"?"+":" "}</span><span class="diff-content">${esc(l.x)}</span></div>`).join("");
+}
+function highlight(el){
+  if(!HL_OK()) return;
+  try{ const r=hljs.highlight(el.textContent,{language:"lua"}); el.innerHTML=r.value; el.classList.add("hljs"); }catch(_){}
+}
+
+/* ---------- Results ---------- */
+function svgCopy(){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';}
+function renderResults(){
+  const list=$("resultList"); list.innerHTML="";
+  const done = entries.filter(e=>e.status==="done"), fail = entries.filter(e=>e.status==="fail");
+  const totalGotos = done.reduce((a,e)=>a+(e.gotos||0),0);
+  const totalBytes = done.reduce((a,e)=>a+(e.bytesSaved||0),0);
+  $("resultsSummary").textContent = `${done.length} file(s) cleaned`+(fail.length?` · ${fail.length} original kept`:"")+` · ${entries.length-done.length-fail.length} untouched`
+    +(totalGotos?` · ${totalGotos} goto(s) kept`:"")+(totalBytes?` · ~${(totalBytes/1024).toFixed(1)} KB of noise removed`:"");
+  for (const f of [...done,...fail]){
+    const item=document.createElement("div"); item.className="result-item";
+    const h=document.createElement("div"); h.className="result-header";
+    const p=document.createElement("span"); p.className="result-path"; p.textContent=f.path; h.appendChild(p);
+    if (f.status==="fail"){
+      const w=document.createElement("div"); w.className="warn-box"; w.textContent=f.note||"Failed.";
+      item.append(h,w); list.appendChild(item); continue;
+    }
+    const mk=(cls,html)=>{const b=document.createElement("button");b.type="button";b.className="btn btn-sm "+cls;b.innerHTML=html;return b;};
+    const vb=mk("btn-outline","View code"), db=mk("btn-outline","View diff"), cb=mk("btn-blue",svgCopy()+" Copy"), dl=mk("btn-green","⬇ Download");
+    const cbody=document.createElement("div"); cbody.className="result-body hidden";
+    const pre=document.createElement("pre"), code=document.createElement("code"); code.textContent=f.cleaned; pre.appendChild(code); cbody.appendChild(pre);
+    const dbody=document.createElement("div"); dbody.className="result-body hidden";
+    const dw=document.createElement("div"); dw.className="diff-container"; dbody.appendChild(dw);
+    vb.onclick=()=>{const was=cbody.classList.contains("hidden");cbody.classList.toggle("hidden");dbody.classList.add("hidden");
+      if(was) highlight(code); vb.textContent=cbody.classList.contains("hidden")?"View code":"Hide code";};
+    db.onclick=()=>{const was=dbody.classList.contains("hidden");dbody.classList.toggle("hidden");cbody.classList.add("hidden");
+      if(was) dw.innerHTML=renderDiff(computeDiff(f.original,f.cleaned)); db.textContent=dbody.classList.contains("hidden")?"View diff":"Hide diff";};
+    cb.onclick=()=>navigator.clipboard.writeText(f.cleaned).then(()=>toast("Copied",f.name,"success"));
+    dl.onclick=()=>downloadBlob(new Blob([f.cleaned],{type:"text/plain"}),f.name);
+    h.append(vb,db,cb,dl);
+    item.append(h);
+    if (f.gotos) { const w=document.createElement("div"); w.className="warn-box"; w.textContent=`${f.gotos} goto/label kept (identical behavior to original — not automatically rewritten).`; item.append(w); }
+    item.append(cbody,dbody);
+    list.appendChild(item);
+  }
+}
+
+/* ---------- Report .txt ---------- */
+$("reportBtn").onclick = ()=>{
+  const done = entries.filter(e=>e.status==="done"), fail = entries.filter(e=>e.status==="fail");
+  const lines = [];
+  lines.push("Cleaner SHX v4 — Cleaning Report");
+  lines.push("Project: "+rootName);
+  lines.push("Data: "+new Date().toLocaleString());
+  lines.push("");
+  lines.push(`Total files: ${entries.length}`);
+  lines.push(`Cleaned successfully: ${done.length}`);
+  lines.push(`Originals kept (validation failed): ${fail.length}`);
+  lines.push(`Untouched (already clean / others): ${entries.length - done.length - fail.length}`);
+  lines.push("");
+  if (done.length){
+    lines.push("--- Cleaned files ---");
+    for (const e of done){
+      lines.push(`${e.path}  (SHX refs: ${e.info?.ids||0}, goto(s) kept: ${e.gotos||0}, noise removed: ${e.bytesSaved||0} bytes)`);
+    }
+    lines.push("");
+  }
+  if (fail.length){
+    lines.push("--- Original files kept (review manually) ---");
+    for (const e of fail){
+      lines.push(`${e.path}  — ${e.note||"failed"}`);
+    }
+  }
+  downloadBlob(new Blob([lines.join("\n")],{type:"text/plain"}), rootName+"-report.txt");
+  toast("Report generated", "'.txt' file downloaded.", "success");
+};
+
+/* ---------- Final ZIP: original structure; cleaned files replaced ---------- */
+$("zipBtn").onclick = async ()=>{
+  if (typeof JSZip==="undefined"){ toast("Error","JSZip failed to load (no connection?).","destructive"); return; }
+  const zip=new JSZip();
+  for (const e of entries){
+    if (e.status==="done") zip.file(e.path, e.cleaned);
+    else zip.file(e.path, e.bytes);                       // byte a byte iguais
+  }
+  try{
+    const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE"});
+    downloadBlob(blob, rootName+"-limpo.zip");
+    toast("Download","ZIP generated successfully.","success");
+  }catch(err){ toast("Error","Failed to generate ZIP.","destructive"); }
+};
+<\/script>
+</body>
+</html></script>
+<script type="text/plain" id="src-comments"><!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cleaner (Remove Comentários)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"><\/script>
+<style>
+  :root {
+    --accent: #007bff;
+    --accent-hover: #1a86ff;
+    --success: #16a34a;
+    --danger: #dc2626;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #0B1622;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 16px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .back-btn {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    transition: background 0.2s, color 0.2s;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.05); color: var(--accent-hover); }
+  .back-btn svg { width: 24px; height: 24px; }
+
+  h1 {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-shadow: 0 0 12px rgba(0,123,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+  }
+  h1 svg { width: 26px; height: 26px; }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(0,123,255,0.35);
+    color: rgba(255,255,255,0.75);
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+  .tab-btn svg { width: 16px; height: 16px; }
+  .tab-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .tab-btn:not(.active):hover { background: rgba(255,255,255,0.08); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .cyber-glass {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(0,123,255,0.35);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 24px rgba(0,123,255,0.06);
+    position: relative;
+  }
+
+  .space-y-8 > * + * { margin-top: 32px; }
+  .space-y-4 > * + * { margin-top: 16px; }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 24px 0;
+    color: #fff;
+  }
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 16px 0;
+    color: #fff;
+  }
+
+  .dropzone {
+    border: 2px dashed var(--accent);
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  }
+  .dropzone.drag-over {
+    background: rgba(0,123,255,0.12);
+    border-color: var(--accent-hover);
+    box-shadow: 0 0 20px rgba(0,123,255,0.3);
+  }
+  .dropzone:hover { background: rgba(255,255,255,0.05); }
+  .dropzone svg.big { width: 46px; height: 46px; margin: 0 auto 8px auto; display: block; color: var(--accent); }
+  .dropzone p { color: rgba(255,255,255,0.85); margin: 0 0 4px 0; }
+  .dropzone .hint { font-size: 0.8rem; color: rgba(255,255,255,0.4); }
+  .pick-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+  .or-divider { text-align: center; color: var(--accent); font-weight: 700; margin: 4px 0; }
+
+  textarea {
+    width: 100%;
+    min-height: 150px;
+    background: #2A2F3C;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    color: #fff;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    outline: none;
+  }
+  textarea:focus { border-color: var(--accent-hover); }
+  textarea::placeholder { color: rgba(255,255,255,0.4); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    color: #fff;
+    transition: background 0.2s, opacity 0.2s;
+    font-family: inherit;
+  }
+  .btn svg { width: 18px; height: 18px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-primary { width: 100%; background: var(--accent); padding: 14px; font-size: 1rem; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+  .btn-sm { padding: 8px 12px; font-size: 0.85rem; }
+  .btn-blue { background: var(--accent); }
+  .btn-blue:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn-green { background: var(--success); }
+  .btn-green:hover:not(:disabled) { background: #15803d; }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.85);
+  }
+  .btn-outline:hover:not(:disabled) { background: rgba(255,255,255,0.08); }
+  .btn-ghost {
+    background: transparent;
+    color: rgba(255,255,255,0.7);
+    padding: 6px;
+  }
+  .btn-ghost:hover { color: #fff; }
+  .btn-ghost svg { width: 16px; height: 16px; }
+  .btn-pick {
+    background: rgba(0,123,255,0.15);
+    border: 1px solid rgba(0,123,255,0.5);
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+  .btn-pick:hover { background: rgba(0,123,255,0.3); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  @media (min-width: 768px) {
+    .grid { grid-template-columns: 1fr auto 1fr; align-items: start; }
+  }
+
+  .arrow-col { display: none; align-items: center; justify-content: center; padding-top: 60px; }
+  @media (min-width: 768px) { .arrow-col { display: flex; } }
+  .arrow-col svg { width: 32px; height: 32px; color: var(--accent); }
+
+  pre {
+    background: #2A2F3C;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 420px;
+  }
+  code { color: rgba(255,255,255,0.9); font-family: "JetBrains Mono", Consolas, Monaco, monospace; }
+
+  .minimized-box { background: #2A2F3C; padding: 16px; border-radius: 8px; color: rgba(255,255,255,0.5); text-align: center; }
+
+  .abs-top-right { position: absolute; top: 16px; right: 16px; display: flex; gap: 8px; }
+
+  .hidden { display: none !important; }
+
+  /* Progress */
+  .progress { height: 8px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin: 14px 0 6px 0; }
+  .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), #22d3ee); transition: width 0.15s; }
+  .progress-label { font-size: 0.8rem; color: rgba(255,255,255,0.55); }
+
+  /* Folder mode specifics */
+  .folder-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .folder-summary { color: rgba(255,255,255,0.65); font-size: 0.9rem; }
+  .toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .file-list {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    max-height: 340px;
+    overflow-y: auto;
+    background: #171f2a;
+  }
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.88rem;
+  }
+  .file-row:last-child { border-bottom: none; }
+  .file-row.unsupported { opacity: 0.5; }
+  .file-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); flex-shrink: 0; }
+  .file-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(0,123,255,0.15);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .file-badge.copy { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5); }
+
+  .result-list { display: flex; flex-direction: column; gap: 10px; }
+  .result-item {
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    background: #171f2a;
+    overflow: hidden;
+  }
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    flex-wrap: wrap;
+  }
+  .result-path { flex: 1; font-size: 0.88rem; overflow-wrap: anywhere; }
+  .result-body { padding: 0 14px 14px 14px; }
+
+  .note { font-size: 0.78rem; color: rgba(255,255,255,0.4); margin-top: 6px; }
+
+  /* Toast */
+  #toast-container { position: fixed; bottom: 24px; right: 24px; left: 24px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 1000; pointer-events: none; }
+  .toast {
+    background: #1c2733;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 18px;
+    min-width: 220px;
+    max-width: 320px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: slideIn 0.2s ease-out;
+  }
+  .toast.destructive { border-color: var(--danger); }
+  .toast.success { border-color: var(--success); }
+  .toast-title { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; }
+  .toast-desc { font-size: 0.85rem; color: rgba(255,255,255,0.75); }
+  @keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <button class="back-btn" id="backBtn" title="Voltar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H8a2 2 0 0 1-1.42-.587l-2.6-2.6a2 2 0 0 1 0-2.83l7.6-7.6a2 2 0 0 1 2.83 0l4.6 4.6a2 2 0 0 1 0 2.83l-4 4"></path><path d="M6 16l3.5 3.5"></path><path d="M2 22l4-4"></path></svg>
+      Cleaner (Remove Comentários)
+    </h1>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="single" id="tabSingleBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      Arquivo Único / Colar
+    </button>
+    <button class="tab-btn" data-tab="folder" id="tabFolderBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+      Pasta / ZIP / Ficheiros
+    </button>
+  </div>
+
+  <!-- ===================== SINGLE FILE / PASTE PANEL ===================== -->
+  <div class="panel active" id="panel-single">
+    <div class="space-y-8">
+      <div class="cyber-glass">
+        <h2>Input Code</h2>
+        <div class="space-y-4">
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" class="hidden" accept=".lua,.js,.ts,.jsx,.tsx,.py">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <p>Arraste ou clique para enviar arquivo de código (.lua, .js, .ts, .py, ...)</p>
+          </div>
+          <div class="or-divider">OU</div>
+          <textarea id="originalCode" placeholder="Cole seu código aqui..."></textarea>
+          <button class="btn btn-primary" id="cleanBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H8a2 2 0 0 1-1.42-.587l-2.6-2.6a2 2 0 0 1 0-2.83l7.6-7.6a2 2 0 0 1 2.83 0l4.6 4.6a2 2 0 0 1 0 2.83l-4 4"></path><path d="M6 16l3.5 3.5"></path><path d="M2 22l4-4"></path></svg>
+            Limpar Comentários
+          </button>
+        </div>
+      </div>
+
+      <div class="grid hidden" id="resultGrid">
+        <div class="cyber-glass" style="position:relative;">
+          <h3>Código Original</h3>
+          <pre id="originalPre"><code id="originalCodeView"></code></pre>
+          <div class="minimized-box hidden" id="originalMinimized">Código original minimizado</div>
+          <button class="btn btn-ghost" id="toggleMinBtn" style="position:absolute; top:16px; right:16px;">
+            <svg id="minimizeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+          </button>
+        </div>
+
+        <div class="arrow-col">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </div>
+
+        <div class="cyber-glass" style="position:relative;">
+          <h3>Código Limpo</h3>
+          <pre><code id="cleanedCodeView"></code></pre>
+          <div class="abs-top-right hidden" id="cleanedActions">
+            <button class="btn btn-sm btn-blue" id="copyBtn">
+              <svg id="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="copyLabel">Copiar</span>
+            </button>
+            <button class="btn btn-sm btn-green" id="downloadBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Download
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FOLDER / ZIP / FILES PANEL ===================== -->
+  <div class="panel" id="panel-folder">
+    <div class="space-y-8">
+      <div class="cyber-glass">
+        <h2>Carregar Pasta, ZIP ou Ficheiros</h2>
+        <div class="space-y-4">
+          <div class="dropzone" id="folderDropzone">
+            <svg class="big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <p><b>Arrasta para aqui</b> ficheiros, pastas ou um ZIP</p>
+            <p class="hint">ZIPs (incluindo ZIPs dentro de ZIPs) são abertos automaticamente</p>
+            <div class="pick-row">
+              <button class="btn btn-pick" id="pickFilesBtn" type="button">📄 Ficheiros</button>
+              <button class="btn btn-pick" id="pickFolderBtn" type="button">📁 Pasta</button>
+              <button class="btn btn-pick" id="pickZipBtn" type="button">🗜️ ZIP</button>
+            </div>
+            <input type="file" id="filesInput" class="hidden" multiple>
+            <input type="file" id="folderInput" class="hidden" webkitdirectory directory multiple>
+            <input type="file" id="zipInput" class="hidden" accept=".zip,application/zip,application/x-zip-compressed" multiple>
+          </div>
+          <div class="hidden" id="loadProgress">
+            <div class="progress"><div id="loadBar"></div></div>
+            <div class="progress-label" id="loadLabel"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cyber-glass hidden" id="folderCard">
+        <h2 style="margin-bottom:12px;">Arquivos Carregados</h2>
+        <div class="folder-toolbar">
+          <div class="folder-summary" id="folderSummary"></div>
+          <div class="toolbar-actions">
+            <button class="btn btn-sm btn-outline" id="selectAllBtn">Selecionar Todos</button>
+            <button class="btn btn-sm btn-outline" id="selectNoneBtn">Limpar Seleção</button>
+            <button class="btn btn-sm btn-outline" id="resetFolderBtn">Recomeçar</button>
+          </div>
+        </div>
+        <div class="file-list" id="fileList"></div>
+        <p class="note">Arquivos com extensão suportada (.lua, .js, .ts, .jsx, .tsx, .py) podem ser selecionados para limpeza. Os demais serão copiados sem alterações no ZIP final.</p>
+        <div style="margin-top:16px;">
+          <button class="btn btn-primary" id="cleanFolderBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H8a2 2 0 0 1-1.42-.587l-2.6-2.6a2 2 0 0 1 0-2.83l7.6-7.6a2 2 0 0 1 2.83 0l4.6 4.6a2 2 0 0 1 0 2.83l-4 4"></path><path d="M6 16l3.5 3.5"></path><path d="M2 22l4-4"></path></svg>
+            Limpar Selecionados
+          </button>
+        </div>
+      </div>
+
+      <div class="cyber-glass hidden" id="folderResultsCard">
+        <div class="folder-toolbar">
+          <h2 style="margin:0;">Resultados</h2>
+          <div class="toolbar-actions">
+            <button class="btn btn-sm btn-green" id="downloadZipBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Baixar ZIP Completo
+            </button>
+          </div>
+        </div>
+        <div class="result-list" id="resultList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container" aria-live="polite"></div>
+
+<script>
+  // ============================================================
+  // Shared comment-removal logic
+  // ============================================================
+  function removeCommentsByExtension(code, extension) {
+    if (extension === "lua") {
+      let withoutBlock = code.replace(/--\[\[[\s\S]*?\]\]/g, "");
+      return withoutBlock
+        .split('\n')
+        .map((line) => {
+          let isInString = false, quoteChar = '', result = '';
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if ((char === '"' || char === "'") && (i === 0 || line[i - 1] !== '\\')) {
+              if (!isInString) { quoteChar = char; isInString = true; }
+              else if (quoteChar === char) { isInString = false; }
+              result += char; continue;
+            }
+            if (!isInString && char === '-' && line[i + 1] === '-') break;
+            result += char;
+          }
+          return result.trim() === "" ? null : result.replace(/\s+$/, '');
+        })
+        .filter((l) => l !== null)
+        .join('\n');
+    }
+    if (extension === "js" || extension === "ts" || extension === "jsx" || extension === "tsx") {
+      let withoutBlock = code.replace(/\/\*[\s\S]*?\*\//g, "");
+      return withoutBlock
+        .split('\n')
+        .map((line) => {
+          let isInString = false, quoteChar = '', result = '';
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"' || char === "'" || char === "`") {
+              if (!isInString) { isInString = true; quoteChar = char; }
+              else if (quoteChar === char && line[i - 1] !== '\\') { isInString = false; }
+              result += char; continue;
+            }
+            if (!isInString && char === '/' && line[i + 1] === '/') break;
+            result += char;
+          }
+          return result.trim() === "" ? null : result.replace(/\s+$/, '');
+        })
+        .filter((l) => l !== null)
+        .join('\n');
+    }
+    if (extension === "py") {
+      let withoutBlock = code.replace(/("""|''')[\s\S]*?\1/g, "");
+      return withoutBlock
+        .split('\n')
+        .map((line) => {
+          let isInString = false, quoteChar = '', result = '';
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if ((char === '"' || char === "'") && (i === 0 || line[i - 1] !== '\\')) {
+              if (!isInString) { quoteChar = char; isInString = true; }
+              else if (quoteChar === char) { isInString = false; }
+              result += char; continue;
+            }
+            if (!isInString && char === '#') break;
+            result += char;
+          }
+          return result.trim() === "" ? null : result.replace(/\s+$/, '');
+        })
+        .filter((l) => l !== null)
+        .join('\n');
+    }
+    return code;
+  }
+
+  const SUPPORTED_EXTS = ["lua", "js", "ts", "jsx", "tsx", "py"];
+  const HARD_LIMIT = 8 * 1024 * 1024; // 8 MB
+  const MAX_ZIP_DEPTH = 3;
+
+  function getFileExtension(filename) {
+    const parts = filename.split(".");
+    return parts.length > 1 ? parts.pop().toLowerCase() : "";
+  }
+
+  function showToast(title, description, variant) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast' + (variant === 'destructive' ? ' destructive' : variant === 'success' ? ' success' : '');
+    toast.innerHTML = `<div class="toast-title">${title}</div><div class="toast-desc">${description || ''}</div>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transition = 'opacity 0.2s';
+      setTimeout(() => toast.remove(), 200);
+    }, 3200);
+  }
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  }
+
+  const tick = () => new Promise(r => setTimeout(r, 0));
+  function normPath(p) { return p.replace(/\\/g, "/").replace(/^\.?\//, "").replace(/\/{2,}/g, "/"); }
+  function baseName(p) { return p.split("/").pop(); }
+  function extOf(n) { const p = n.split("."); return p.length > 1 ? p.pop().toLowerCase() : ""; }
+
+  function setBar(barId, labelId, wrapId, pct, label) {
+    document.getElementById(wrapId).classList.remove("hidden");
+    document.getElementById(barId).style.width = Math.max(0, Math.min(100, pct)) + "%";
+    document.getElementById(labelId).textContent = label || "";
+  }
+
+  // ============================================================
+  // Tabs
+  // ============================================================
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      tabButtons.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.panel').forEach((p) => p.classList.remove('active'));
+      document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ============================================================
+  // SINGLE FILE / PASTE PANEL
+  // ============================================================
+  let originalCode = "";
+  let cleanedCode = "";
+  let ext = "lua";
+  let isOriginalMinimized = false;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const originalCodeInput = document.getElementById('originalCode');
+  const cleanBtn = document.getElementById('cleanBtn');
+  const resultGrid = document.getElementById('resultGrid');
+  const originalPre = document.getElementById('originalPre');
+  const originalCodeView = document.getElementById('originalCodeView');
+  const originalMinimized = document.getElementById('originalMinimized');
+  const toggleMinBtn = document.getElementById('toggleMinBtn');
+  const minimizeIcon = document.getElementById('minimizeIcon');
+  const cleanedCodeView = document.getElementById('cleanedCodeView');
+  const cleanedActions = document.getElementById('cleanedActions');
+  const copyBtn = document.getElementById('copyBtn');
+  const copyIcon = document.getElementById('copyIcon');
+  const copyLabel = document.getElementById('copyLabel');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const backBtn = document.getElementById('backBtn');
+
+  const ICON_MINIMIZE = minimizeIcon.outerHTML;
+  const ICON_MAXIMIZE = '<svg id="minimizeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>';
+  const ICON_COPY = copyIcon.outerHTML;
+  const ICON_CHECK = '<svg id="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      ext = getFileExtension(file.name);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        originalCode = event.target.result;
+        originalCodeInput.value = originalCode;
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  originalCodeInput.addEventListener('input', (e) => { originalCode = e.target.value; });
+
+  cleanBtn.addEventListener('click', () => {
+    if (!originalCode.trim()) {
+      showToast('Erro', 'Por favor insira algum código para limpar.', 'destructive');
+      return;
+    }
+    try {
+      cleanedCode = removeCommentsByExtension(originalCode, ext);
+      originalCodeView.textContent = originalCode;
+      cleanedCodeView.textContent = cleanedCode;
+      resultGrid.classList.remove('hidden');
+      cleanedActions.classList.remove('hidden');
+      showToast('Sucesso', 'Código limpo com sucesso! Todos os comentários removidos.', 'success');
+    } catch (err) {
+      showToast('Erro', 'Falha ao limpar o código.', 'destructive');
+    }
+  });
+
+  toggleMinBtn.addEventListener('click', () => {
+    isOriginalMinimized = !isOriginalMinimized;
+    if (isOriginalMinimized) {
+      originalPre.classList.add('hidden');
+      originalMinimized.classList.remove('hidden');
+      minimizeIcon.outerHTML = ICON_MAXIMIZE;
+    } else {
+      originalPre.classList.remove('hidden');
+      originalMinimized.classList.add('hidden');
+      document.getElementById('minimizeIcon').outerHTML = ICON_MINIMIZE;
+    }
+  });
+
+  copyBtn.addEventListener('click', () => {
+    if (!cleanedCode) return;
+    navigator.clipboard.writeText(cleanedCode).then(() => {
+      copyIcon.outerHTML = ICON_CHECK;
+      copyLabel.textContent = 'Copiado!';
+      showToast('Copiado!', 'Código limpo copiado para área de transferência.', 'success');
+      setTimeout(() => {
+        document.getElementById('copyIcon').outerHTML = ICON_COPY;
+        copyLabel.textContent = 'Copiar';
+      }, 2000);
+    });
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    if (!cleanedCode) return;
+    downloadBlob(new Blob([cleanedCode], { type: 'text/plain' }), 'codigo-limpo.' + ext);
+    showToast('Download', 'Código limpo baixado.', 'success');
+  });
+
+  backBtn.addEventListener('click', () => { window.parent.postMessage({ type: 'mist-home' }, '*'); });
+
+  // ============================================================
+  // FOLDER / ZIP / FILES PANEL — same loading model as SHX
+  // ============================================================
+  // folderFiles: {id, path, name, ext, supported, original (text|null), bytes (Uint8Array), cleaned (text|null), selected}
+  let folderFiles = [];
+  let folderRootName = "pasta";
+  let uid = 0;
+
+  const folderDropzone = document.getElementById('folderDropzone');
+  const filesInput = document.getElementById('filesInput');
+  const folderInput = document.getElementById('folderInput');
+  const zipInput = document.getElementById('zipInput');
+  const folderCard = document.getElementById('folderCard');
+  const folderSummary = document.getElementById('folderSummary');
+  const fileListEl = document.getElementById('fileList');
+  const selectAllBtn = document.getElementById('selectAllBtn');
+  const selectNoneBtn = document.getElementById('selectNoneBtn');
+  const resetFolderBtn = document.getElementById('resetFolderBtn');
+  const cleanFolderBtn = document.getElementById('cleanFolderBtn');
+  const folderResultsCard = document.getElementById('folderResultsCard');
+  const resultList = document.getElementById('resultList');
+  const downloadZipBtn = document.getElementById('downloadZipBtn');
+
+  function readAsBuffer(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => rej(r.error);
+      r.readAsArrayBuffer(file);
+    });
+  }
+
+  async function addEntry(path, dataBytes, size) {
+    path = normPath(path);
+    const name = baseName(path);
+    const e = extOf(name);
+    const supported = SUPPORTED_EXTS.includes(e) && size <= HARD_LIMIT;
+    const item = {
+      id: "f" + (uid++),
+      path,
+      name,
+      ext: e,
+      supported,
+      original: null,
+      bytes: dataBytes,
+      cleaned: null,
+      selected: supported
+    };
+    if (supported) {
+      item.original = new TextDecoder("utf-8", { fatal: false }).decode(dataBytes);
+    }
+    folderFiles.push(item);
+  }
+
+  async function ingestZip(buffer, prefix, depth, progress) {
+    const zip = await JSZip.loadAsync(buffer);
+    const files = [];
+    zip.forEach((rel, f) => { if (!f.dir) files.push([rel, f]); });
+    for (let i = 0; i < files.length; i++) {
+      const [rel, f] = files[i];
+      const safe = normPath(rel);
+      if (safe.split("/").includes("..")) continue;
+      if (/(^|\/)__MACOSX(\/|$)|(^|\/)\.DS_Store$|(^|\/)Thumbs\.db$/i.test(safe)) continue;
+      const bytes = await f.async("uint8array");
+      const full = prefix ? prefix + "/" + safe : safe;
+      if (extOf(safe) === "zip" && depth < MAX_ZIP_DEPTH) {
+        try {
+          await ingestZip(bytes, full.replace(/\.zip$/i, ""), depth + 1, progress);
+          continue;
+        } catch (_) {}
+      }
+      await addEntry(full, bytes, bytes.length);
+      if (i % 25 === 0) {
+        progress && progress(i / files.length, rel);
+        await tick();
+      }
+    }
+  }
+
+  async function loadFiles(fileArr) {
+    fileArr = Array.from(fileArr || []);
+    if (!fileArr.length) return;
+    folderFiles = [];
+    uid = 0;
+    folderResultsCard.classList.add("hidden");
+    resultList.innerHTML = "";
+
+    const first = fileArr[0];
+    const rp = first.webkitRelativePath || first._relativePath || "";
+    const isZip0 = fileArr.length === 1 && extOf(first.name) === "zip";
+    folderRootName = isZip0
+      ? first.name.replace(/\.zip$/i, "")
+      : (rp.includes("/") ? rp.split("/")[0] : "pasta");
+
+    try {
+      for (let i = 0; i < fileArr.length; i++) {
+        const f = fileArr[i];
+        const rel = f.webkitRelativePath || f._relativePath || f.name;
+        setBar("loadBar", "loadLabel", "loadProgress", (i / fileArr.length) * 100, `A ler ${i + 1}/${fileArr.length}: ${rel}`);
+        const buf = await readAsBuffer(f);
+        const bytes = new Uint8Array(buf);
+        if (extOf(f.name) === "zip") {
+          const prefix = isZip0 ? "" : rel.replace(/\.zip$/i, "");
+          await ingestZip(bytes, prefix, 0, (p, n) =>
+            setBar("loadBar", "loadLabel", "loadProgress", ((i + p) / fileArr.length) * 100, `A abrir ZIP: ${n}`)
+          );
+        } else {
+          await addEntry(rel, bytes, bytes.length);
+        }
+        await tick();
+      }
+    } catch (err) {
+      showToast("Erro a ler", err.message || String(err), "destructive");
+    }
+    document.getElementById("loadProgress").classList.add("hidden");
+    if (!folderFiles.length) {
+      showToast("Sem conteúdo", "Nenhum ficheiro encontrado.", "destructive");
+      return;
+    }
+    folderFiles.sort((a, b) => a.path.localeCompare(b.path));
+    folderCard.classList.remove("hidden");
+    renderFileList();
+    const s = folderFiles.filter(f => f.supported).length;
+    showToast("Carregamento concluído", `${folderFiles.length} ficheiro(s) · ${s} suportado(s).`, "success");
+  }
+
+  /* Drag & drop (files, folders, zips) — same as SHX */
+  function readDirEntry(dir, path, out) {
+    return new Promise((resolve) => {
+      const rd = dir.createReader();
+      const all = [];
+      const step = () => rd.readEntries(async (ents) => {
+        if (!ents.length) {
+          for (const en of all) {
+            const p = path ? path + "/" + en.name : en.name;
+            if (en.isDirectory) await readDirEntry(en, p, out);
+            else await new Promise(r => en.file(f => { f._relativePath = p; out.push(f); r(); }, () => r()));
+          }
+          resolve();
+          return;
+        }
+        all.push(...ents);
+        step();
+      }, () => resolve());
+      step();
+    });
+  }
+
+  ["dragenter", "dragover"].forEach(ev =>
+    folderDropzone.addEventListener(ev, e => { e.preventDefault(); folderDropzone.classList.add("drag-over"); })
+  );
+  ["dragleave", "drop"].forEach(ev =>
+    folderDropzone.addEventListener(ev, e => { e.preventDefault(); folderDropzone.classList.remove("drag-over"); })
+  );
+  folderDropzone.addEventListener("drop", async (e) => {
+    const items = e.dataTransfer.items;
+    const files = [];
+    if (items && items.length && items[0].webkitGetAsEntry) {
+      const ents = Array.from(items).map(i => i.webkitGetAsEntry()).filter(Boolean);
+      for (const en of ents) {
+        if (en.isDirectory) await readDirEntry(en, en.name, files);
+        else await new Promise(r => en.file(f => { f._relativePath = en.name; files.push(f); r(); }, () => r()));
+      }
+    } else {
+      files.push(...Array.from(e.dataTransfer.files));
+    }
+    loadFiles(files);
+  });
+
+  document.getElementById("pickFilesBtn").onclick = () => filesInput.click();
+  document.getElementById("pickFolderBtn").onclick = () => folderInput.click();
+  document.getElementById("pickZipBtn").onclick = () => zipInput.click();
+  [filesInput, folderInput, zipInput].forEach(inp =>
+    inp.addEventListener("change", e => { loadFiles(e.target.files); e.target.value = ""; })
+  );
+
+  function renderFileList() {
+    const supportedCount = folderFiles.filter(f => f.supported).length;
+    const selectedCount = folderFiles.filter(f => f.supported && f.selected).length;
+    folderSummary.textContent = `${folderFiles.length} ficheiro(s) · ${supportedCount} suportado(s) · ${selectedCount} selecionado(s)`;
+
+    fileListEl.innerHTML = "";
+    folderFiles.forEach(f => {
+      const row = document.createElement("div");
+      row.className = "file-row" + (f.supported ? "" : " unsupported");
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = f.selected;
+      checkbox.disabled = !f.supported;
+      checkbox.addEventListener("change", () => {
+        f.selected = checkbox.checked;
+        renderFileList();
+      });
+
+      const pathSpan = document.createElement("span");
+      pathSpan.className = "file-path";
+      pathSpan.textContent = f.path;
+      pathSpan.title = f.path;
+
+      const badge = document.createElement("span");
+      badge.className = "file-badge" + (f.supported ? "" : " copy");
+      badge.textContent = f.supported ? ("." + f.ext) : "cópia direta";
+
+      row.appendChild(checkbox);
+      row.appendChild(pathSpan);
+      row.appendChild(badge);
+      fileListEl.appendChild(row);
+    });
+  }
+
+  selectAllBtn.addEventListener("click", () => {
+    folderFiles.forEach(f => { if (f.supported) f.selected = true; });
+    renderFileList();
+  });
+  selectNoneBtn.addEventListener("click", () => {
+    folderFiles.forEach(f => { if (f.supported) f.selected = false; });
+    renderFileList();
+  });
+  resetFolderBtn.addEventListener("click", () => {
+    folderFiles = [];
+    folderCard.classList.add("hidden");
+    folderResultsCard.classList.add("hidden");
+    resultList.innerHTML = "";
+    document.getElementById("loadProgress").classList.add("hidden");
+  });
+
+  cleanFolderBtn.addEventListener("click", () => {
+    const targets = folderFiles.filter(f => f.supported && f.selected);
+    if (targets.length === 0) {
+      showToast("Erro", "Selecione ao menos um arquivo suportado para limpar.", "destructive");
+      return;
+    }
+    try {
+      targets.forEach(f => {
+        f.cleaned = removeCommentsByExtension(f.original, f.ext);
+      });
+      renderResults();
+      folderResultsCard.classList.remove("hidden");
+      showToast("Sucesso", targets.length + " ficheiro(s) limpo(s) com sucesso!", "success");
+    } catch (err) {
+      showToast("Erro", "Falha ao limpar um ou mais arquivos.", "destructive");
+    }
+  });
+
+  function renderResults() {
+    resultList.innerHTML = "";
+    const cleanedFiles = folderFiles.filter(f => f.cleaned !== null);
+    cleanedFiles.forEach(f => {
+      const item = document.createElement("div");
+      item.className = "result-item";
+
+      const header = document.createElement("div");
+      header.className = "result-header";
+
+      const pathSpan = document.createElement("span");
+      pathSpan.className = "result-path";
+      pathSpan.textContent = f.path;
+
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "btn btn-sm btn-outline";
+      viewBtn.textContent = "Ver Código";
+
+      const dlBtn = document.createElement("button");
+      dlBtn.className = "btn btn-sm btn-green";
+      dlBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> Baixar`;
+      dlBtn.addEventListener("click", () => {
+        downloadBlob(new Blob([f.cleaned], { type: "text/plain" }), f.name);
+        showToast("Download", f.name + " baixado.", "success");
+      });
+
+      const body = document.createElement("div");
+      body.className = "result-body hidden";
+      const pre = document.createElement("pre");
+      const code = document.createElement("code");
+      code.textContent = f.cleaned;
+      pre.appendChild(code);
+      body.appendChild(pre);
+
+      viewBtn.addEventListener("click", () => {
+        body.classList.toggle("hidden");
+        viewBtn.textContent = body.classList.contains("hidden") ? "Ver Código" : "Ocultar Código";
+      });
+
+      header.appendChild(pathSpan);
+      header.appendChild(viewBtn);
+      header.appendChild(dlBtn);
+      item.appendChild(header);
+      item.appendChild(body);
+      resultList.appendChild(item);
+    });
+  }
+
+  downloadZipBtn.addEventListener("click", () => {
+    if (typeof JSZip === "undefined") {
+      showToast("Erro", "Biblioteca de ZIP não carregou. Verifique sua conexão.", "destructive");
+      return;
+    }
+    if (folderFiles.length === 0) {
+      showToast("Erro", "Nenhuma pasta/ZIP carregada.", "destructive");
+      return;
+    }
+    const zip = new JSZip();
+    folderFiles.forEach(f => {
+      if (f.cleaned !== null) {
+        zip.file(f.path, f.cleaned);
+      } else {
+        zip.file(f.path, f.bytes); // byte-for-byte copy
+      }
+    });
+    zip.generateAsync({ type: "blob", compression: "DEFLATE" }).then(blob => {
+      downloadBlob(blob, folderRootName + "-limpo.zip");
+      showToast("Download", "ZIP gerado com sucesso.", "success");
+    }).catch(() => {
+      showToast("Erro", "Falha ao gerar o ZIP.", "destructive");
+    });
+  });
+<\/script>
+
+</body>
+</html></script>
+<script type="text/plain" id="src-bundle"><!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bundle Studio — Projeto para MD / TXT / PDF</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"><\/script>
+<style>
+  :root { --accent:#007bff; --accent-hover:#1a86ff; --cyan:#22d3ee; --danger:#dc2626; --success:#16a34a; --warn:#f59e0b; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; background:#0B1622; color:#fff;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+  .container { max-width:1200px; margin:0 auto; padding:48px 16px; }
+  .header { display:flex; align-items:center; margin-bottom:8px; }
+  h1 { font-size:2.1rem; font-weight:700; color:var(--accent); text-shadow:0 0 12px rgba(0,123,255,.6);
+    display:flex; align-items:center; gap:10px; margin:0; }
+  h1 svg { width:26px; height:26px; }
+  .subtitle { color:rgba(255,255,255,.55); font-size:.92rem; margin:0 0 24px 0; line-height:1.5; }
+  .cyber-glass { background:rgba(255,255,255,.04); border:1px solid rgba(0,123,255,.35); border-radius:16px;
+    padding:24px; backdrop-filter:blur(6px); box-shadow:0 0 24px rgba(0,123,255,.06); position:relative; }
+  .space-y > * + * { margin-top:24px; }
+  h2 { font-size:1.2rem; font-weight:600; margin:0 0 16px 0; }
+  .hidden { display:none !important; }
+
+  /* Dropzone */
+  .dropzone { border:2px dashed var(--accent); border-radius:12px; padding:34px 20px; text-align:center;
+    transition:background .2s,border-color .2s,box-shadow .2s; }
+  .dropzone.drag-over { background:rgba(0,123,255,.12); border-color:var(--accent-hover); box-shadow:0 0 20px rgba(0,123,255,.3); }
+  .dropzone svg.big { width:46px; height:46px; margin:0 auto 8px auto; display:block; color:var(--accent); }
+  .dropzone p { color:rgba(255,255,255,.85); margin:0 0 4px 0; }
+  .dropzone .hint { font-size:.8rem; color:rgba(255,255,255,.4); }
+  .pick-row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; border-radius:8px;
+    cursor:pointer; font-weight:700; color:#fff; transition:background .2s,opacity .2s; font-family:inherit; }
+  .btn:disabled { opacity:.4; cursor:not-allowed; }
+  .btn-primary { background:var(--accent); padding:11px 18px; font-size:.92rem; }
+  .btn-primary:hover:not(:disabled) { background:var(--accent-hover); }
+  .btn-sm { padding:8px 12px; font-size:.85rem; }
+  .btn-green { background:var(--success); padding:11px 18px; font-size:.92rem; } .btn-green:hover:not(:disabled){ background:#15803d; }
+  .btn-red { background:var(--danger); padding:11px 18px; font-size:.92rem; } .btn-red:hover:not(:disabled){ background:#b91c1c; }
+  .btn-outline { background:transparent; border:1px solid rgba(255,255,255,.25); color:rgba(255,255,255,.85); padding:11px 18px; font-size:.92rem; }
+  .btn-outline.btn-sm { padding:8px 12px; font-size:.85rem; }
+  .btn-outline:hover:not(:disabled){ background:rgba(255,255,255,.08); }
+  .btn-pick { background:rgba(0,123,255,.15); border:1px solid rgba(0,123,255,.5); padding:10px 16px; font-size:.9rem; }
+  .btn-pick:hover { background:rgba(0,123,255,.3); }
+
+  /* Form fields */
+  .fields { display:grid; grid-template-columns:1fr 1.6fr; gap:14px; margin-top:18px; }
+  .field label { display:block; font-size:.78rem; color:rgba(255,255,255,.5); margin-bottom:6px; }
+  .field input[type=text], .field select, .search-input { width:100%; background:#2A2F3C; border:1px solid rgba(255,255,255,.12);
+    border-radius:8px; color:#fff; padding:10px 12px; font-family:inherit; font-size:.88rem; outline:none; }
+  .field input:focus, .field select:focus, .search-input:focus { border-color:var(--accent); }
+  .field select option { background:#2A2F3C; }
+  .import-actions { display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; align-items:center; }
+
+  /* Stats */
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .stat { background:#171f2a; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px 16px; }
+  .stat .n { font-size:1.7rem; font-weight:800; line-height:1.1; }
+  .stat .l { font-size:.78rem; color:rgba(255,255,255,.5); margin-top:2px; }
+  .stat.s-text .n { color:#4ade80; } .stat.s-img .n { color:var(--cyan); } .stat.s-size .n { color:var(--warn); }
+
+  /* Options */
+  .opts { display:flex; gap:18px; flex-wrap:wrap; margin:0 0 18px 0; }
+  .opt { display:flex; align-items:center; gap:8px; font-size:.88rem; cursor:pointer; color:rgba(255,255,255,.85); }
+  .opt input { width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+  .opt small { color:rgba(255,255,255,.4); }
+  .sort-field { max-width:260px; }
+
+  /* Explorer */
+  .toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .toolbar h2 { margin:0; }
+  .count-label { font-size:.82rem; color:rgba(255,255,255,.5); }
+  .filters { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.7);
+    padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit; font-size:.8rem; font-weight:600; }
+  .chip.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .search-input { flex:1; min-width:200px; width:auto; }
+  .file-list { border:1px solid rgba(255,255,255,.1); border-radius:10px; max-height:400px; overflow-y:auto; background:#171f2a; }
+  .file-row { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid rgba(255,255,255,.06); font-size:.87rem; }
+  .file-row:last-child { border-bottom:none; }
+  .file-row:hover { background:rgba(255,255,255,.03); }
+  .file-row.dim { opacity:.5; }
+  .file-row input { width:16px; height:16px; accent-color:var(--accent); flex-shrink:0; }
+  .ficon { width:30px; height:30px; flex-shrink:0; display:grid; place-items:center; background:rgba(255,255,255,.05); border-radius:8px; }
+  .file-info { flex:1; min-width:0; }
+  .fname { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .fpath { font-size:.72rem; color:rgba(255,255,255,.35); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { font-size:.7rem; padding:2px 9px; border-radius:999px; flex-shrink:0; font-weight:600; }
+  .badge.text { background:rgba(22,163,74,.18); color:#4ade80; }
+  .badge.image { background:rgba(34,211,238,.16); color:var(--cyan); }
+  .badge.binary { background:rgba(245,158,11,.18); color:var(--warn); }
+  .badge.copy { background:rgba(255,255,255,.08); color:rgba(255,255,255,.5); }
+  .meta { font-size:.72rem; color:rgba(255,255,255,.35); flex-shrink:0; white-space:nowrap; }
+  .open-btn { background:transparent; border:1px solid rgba(0,123,255,.4); color:var(--cyan); border-radius:6px;
+    padding:3px 8px; cursor:pointer; font-size:.95rem; font-family:inherit; }
+  .open-btn:hover { background:rgba(0,123,255,.25); }
+  .empty { text-align:center; padding:40px 16px; color:rgba(255,255,255,.5); font-size:.9rem; }
+  .empty b { display:block; color:#fff; margin-bottom:4px; }
+  .empty .big-ico { font-size:2.2rem; margin-bottom:6px; }
+
+  /* Progress */
+  .progress { height:8px; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin:14px 0 6px 0; }
+  .progress > div { height:100%; width:0; background:linear-gradient(90deg,var(--accent),#22d3ee); transition:width .15s; }
+  .progress-label { font-size:.8rem; color:rgba(255,255,255,.55); }
+
+  /* Preview */
+  .tabs { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+  .tab-btn { background:rgba(255,255,255,.04); border:1px solid rgba(0,123,255,.35); color:rgba(255,255,255,.75);
+    padding:9px 16px; border-radius:10px; cursor:pointer; font-weight:600; font-family:inherit; font-size:.88rem; transition:all .2s; }
+  .tab-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .tab-btn:not(.active):hover { background:rgba(255,255,255,.08); }
+  .pane { min-height:220px; max-height:560px; overflow:auto; padding:18px; background:#171f2a;
+    border:1px solid rgba(255,255,255,.1); border-radius:10px; overflow-wrap:anywhere; }
+  pre.pane, .mono { white-space:pre-wrap; word-break:break-word; font:.8rem/1.65 "JetBrains Mono",Consolas,Monaco,monospace; margin:0; }
+  .md { line-height:1.65; font-size:.92rem; }
+  .md h1, .md h2, .md h3 { line-height:1.3; margin:1.2em 0 .5em; }
+  .md h1 { font-size:1.45rem; color:var(--accent); }
+  .md h2 { font-size:1.15rem; }
+  .md > :first-child { margin-top:0; }
+  .md pre { background:#2A2F3C; padding:14px; border-radius:8px; overflow:auto; }
+  .md code { font-family:"JetBrains Mono",Consolas,Monaco,monospace; font-size:.8rem; color:rgba(255,255,255,.9); }
+  .md :not(pre) > code { background:rgba(255,255,255,.08); padding:1px 6px; border-radius:4px; }
+  .md img { max-width:100%; height:auto; border-radius:8px; }
+  .md table { border-collapse:collapse; }
+  .md td, .md th { border:1px solid rgba(255,255,255,.15); padding:6px 10px; }
+  .md a { color:var(--cyan); }
+  .md blockquote { border-left:3px solid var(--accent); margin:0; padding:0 14px; color:rgba(255,255,255,.65); }
+  .md hr { border:0; border-top:1px solid rgba(255,255,255,.1); margin:1.4em 0; }
+  .inspector h3 { margin:0 0 6px 0; font-size:1rem; overflow-wrap:anywhere; }
+  .inspector p { margin:0 0 12px 0; color:rgba(255,255,255,.55); font-size:.85rem; }
+  .inspector pre { background:#2A2F3C; padding:14px; border-radius:8px; overflow:auto; white-space:pre-wrap; word-break:break-word;
+    font:.8rem/1.6 "JetBrains Mono",Consolas,Monaco,monospace; margin:0; }
+  .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+
+  #toast-container { position:fixed; bottom:24px; right:24px; left:24px; display:flex; flex-direction:column; align-items:flex-end; gap:10px; z-index:1000; pointer-events:none; }
+  .toast { background:#1c2733; border:1px solid var(--accent); border-radius:10px; padding:14px 18px; min-width:220px; max-width:340px;
+    box-shadow:0 8px 24px rgba(0,0,0,.4); animation:slideIn .2s ease-out; }
+  .toast.destructive { border-color:var(--danger); } .toast.success { border-color:var(--success); }
+  .toast-title { font-weight:700; margin-bottom:4px; font-size:.95rem; } .toast-desc { font-size:.85rem; color:rgba(255,255,255,.75); }
+  @keyframes slideIn { from{transform:translateX(30px);opacity:0} to{transform:translateX(0);opacity:1} }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  @media (max-width:720px) {
+    .fields { grid-template-columns:1fr; }
+    .container { padding:32px 12px; }
+    h1 { font-size:1.7rem; }
+    .meta { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      Bundle Studio
+    </h1>
+  </div>
+  <p class="subtitle">Importa um <b>ZIP</b>, uma pasta ou ficheiros soltos e junta tudo num único documento <b>Markdown</b>, <b>TXT</b> ou <b>PDF</b> (ou reexporta como ZIP). Processamento 100% local no browser, sem enviar nada para servidores.</p>
+
+  <div class="space-y">
+    <div class="cyber-glass">
+      <div class="dropzone" id="dropzone">
+        <svg class="big" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p><b>Arrasta para aqui</b> ficheiros, pastas ou um ZIP</p>
+        <p class="hint">Arquivos ZIP, pastas inteiras ou ficheiros individuais</p>
+        <div class="pick-row">
+          <button class="btn btn-pick" id="pickFilesBtn" type="button">📄 Ficheiros</button>
+          <button class="btn btn-pick" id="pickFolderBtn" type="button">📁 Pasta</button>
+          <button class="btn btn-pick" id="pickZipBtn" type="button">🗜️ ZIP</button>
+        </div>
+        <input type="file" id="filesInput" class="hidden" multiple>
+        <input type="file" id="folderInput" class="hidden" webkitdirectory directory multiple>
+        <input type="file" id="zipInput" class="hidden" accept=".zip,application/zip,application/x-zip-compressed">
+      </div>
+      <div class="hidden" id="loadProgress">
+        <div class="progress"><div id="loadBar"></div></div>
+        <div class="progress-label" id="loadLabel"></div>
+      </div>
+
+      <div class="fields">
+        <div class="field">
+          <label for="projectName">Nome do projeto</label>
+          <input type="text" id="projectName" value="O meu projeto">
+        </div>
+        <div class="field">
+          <label for="ignoreInput">Pastas e ficheiros ignorados (separados por vírgula)</label>
+          <input type="text" id="ignoreInput" value=".git,node_modules,__MACOSX,dist,build,.next,.cache">
+        </div>
+      </div>
+      <div class="import-actions">
+        <button class="btn btn-outline btn-sm" id="resetBtn" type="button">Recomeçar</button>
+      </div>
+    </div>
+
+    <div class="space-y hidden" id="work">
+      <div class="cyber-glass">
+        <h2>Análise do projeto</h2>
+        <div class="stats">
+          <div class="stat"><div class="n" id="totalStat">0</div><div class="l">📁 Ficheiros selecionados</div></div>
+          <div class="stat s-text"><div class="n" id="textStat">0</div><div class="l">📝 Ficheiros de texto</div></div>
+          <div class="stat s-img"><div class="n" id="imageStat">0</div><div class="l">🖼️ Imagens</div></div>
+          <div class="stat s-size"><div class="n" id="sizeStat">0 B</div><div class="l">💾 Tamanho total</div></div>
+        </div>
+      </div>
+
+      <div class="cyber-glass">
+        <h2>Configuração de exportação</h2>
+        <div class="opts">
+          <label class="opt"><input type="checkbox" id="optEmbed" checked> Embutir imagens no Markdown</label>
+          <label class="opt"><input type="checkbox" id="optToc" checked> Gerar índice</label>
+          <label class="opt"><input type="checkbox" id="optManifest" checked> Incluir manifesto de ficheiros</label>
+          <label class="opt"><input type="checkbox" id="optBinary"> Incluir binários em Base64 <small>(pesado)</small></label>
+          <label class="opt"><input type="checkbox" id="optHidden"> Incluir ficheiros ocultos</label>
+        </div>
+        <div class="field sort-field">
+          <label for="sortSelect">Ordenar ficheiros</label>
+          <select id="sortSelect">
+            <option value="path">Nome A → Z</option>
+            <option value="desc">Nome Z → A</option>
+            <option value="size">Tamanho</option>
+            <option value="type">Tipo de ficheiro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cyber-glass">
+        <div class="toolbar">
+          <h2>Explorador do projeto</h2>
+          <span class="count-label" id="fileCount">0 ficheiros</span>
+        </div>
+        <div class="toolbar">
+          <div class="filters" id="filters">
+            <button class="chip active" type="button" data-filter="all">Todos</button>
+            <button class="chip" type="button" data-filter="text">Texto</button>
+            <button class="chip" type="button" data-filter="image">Imagens</button>
+            <button class="chip" type="button" data-filter="binary">Binários</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" id="selectAll" type="button">Selecionar tudo</button>
+            <button class="btn btn-outline btn-sm" id="selectNone" type="button">Desmarcar tudo</button>
+            <button class="btn btn-outline btn-sm" id="selectInvert" type="button">Inverter seleção</button>
+          </div>
+          <input class="search-input" id="searchInput" type="search" placeholder="Pesquisar por nome ou caminho…" aria-label="Pesquisar ficheiros">
+        </div>
+        <div class="file-list" id="fileList"></div>
+      </div>
+
+      <div class="cyber-glass">
+        <div class="toolbar">
+          <h2>Pré-visualização</h2>
+          <span class="count-label">Pré-visualização em direto</span>
+        </div>
+        <div class="tabs">
+          <button class="tab-btn active" type="button" data-tab="rendered">Markdown</button>
+          <button class="tab-btn" type="button" data-tab="txtPreview">TXT</button>
+          <button class="tab-btn" type="button" data-tab="raw">Fonte Markdown</button>
+          <button class="tab-btn" type="button" data-tab="inspector">Inspetor de ficheiro</button>
+        </div>
+
+        <div class="pane md" id="rendered"></div>
+        <pre class="pane hidden" id="txtPreview"></pre>
+        <pre class="pane hidden" id="raw"></pre>
+        <div class="pane inspector hidden" id="inspector"></div>
+
+        <div class="hidden" id="exportStatus">
+          <div class="progress"><div id="exportBar"></div></div>
+          <div class="progress-label" id="exportLabel"></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="downloadMd" type="button" disabled>⬇ Markdown</button>
+          <button class="btn btn-green" id="downloadTxt" type="button" disabled>⬇ TXT</button>
+          <button class="btn btn-red" id="downloadPdf" type="button" disabled>⬇ PDF</button>
+          <button class="btn btn-outline" id="copyMd" type="button" disabled>Copiar MD</button>
+          <button class="btn btn-outline" id="copyTxt" type="button" disabled>Copiar TXT</button>
+          <button class="btn btn-outline" id="downloadZip" type="button" disabled>Descarregar ZIP</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast-container" aria-live="polite"></div>
+
+<script>
+(() => {
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const DEFAULT_PROJECT = "O meu projeto";
+
+const state = {
+  files: [],
+  selected: new Set(),
+  project: DEFAULT_PROJECT,
+  activeFile: null,
+  markdown: "",
+  plainText: "",
+  inspectorUrl: null
+};
+
+let filterKind = "all";
+let busy = false;
+
+const IMAGE_MIME = {
+  png:"image/png", jpg:"image/jpeg", jpeg:"image/jpeg",
+  gif:"image/gif", webp:"image/webp", bmp:"image/bmp",
+  ico:"image/x-icon", avif:"image/avif", tif:"image/tiff",
+  tiff:"image/tiff"
+};
+
+const LANG = {
+  js:"javascript", mjs:"javascript", jsx:"jsx",
+  ts:"typescript", tsx:"tsx", py:"python",
+  html:"html", htm:"html", css:"css",
+  json:"json", md:"markdown", yaml:"yaml",
+  yml:"yaml", sql:"sql", sh:"bash", php:"php",
+  rs:"rust", go:"go", java:"java", xml:"xml",
+  svg:"xml", vue:"vue", svelte:"svelte", lua:"lua"
+};
+
+const KIND_LABEL = { text:"texto", image:"imagem", binary:"binário" };
+
+const escapeHtml = value =>
+  String(value).replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;",
+    '"':"&quot;", "'":"&#39;"
+  })[c]);
+
+const basename = path => path.split("/").pop();
+
+const extension = path => {
+  const name = basename(path);
+  const i = name.lastIndexOf(".");
+  return i > 0 ? name.slice(i + 1).toLowerCase() : "";
+};
+
+const formatBytes = bytes => {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+  return (bytes / 1073741824).toFixed(2) + " GB";
+};
+
+const tick = () => new Promise(resolve => setTimeout(resolve, 0));
+
+function showToast(title, desc, type) {
+  const container = $("toast-container");
+  const el = document.createElement("div");
+  el.className = "toast" + (type ? " " + type : "");
+  const t = document.createElement("div");
+  t.className = "toast-title";
+  t.textContent = title;
+  const d = document.createElement("div");
+  d.className = "toast-desc";
+  d.textContent = desc || "";
+  el.appendChild(t);
+  if (desc) el.appendChild(d);
+  container.appendChild(el);
+  setTimeout(() => el.remove(), 3400);
+}
+
+/* Import status (top card) */
+function istatus(message) {
+  $("loadProgress").classList.toggle("hidden", !message);
+  $("loadLabel").textContent = message || "";
+}
+function iprogress(value) {
+  $("loadBar").style.width = Math.max(0, Math.min(100, value)) + "%";
+}
+
+/* Export status (preview card) */
+function xstatus(message) {
+  $("exportStatus").classList.toggle("hidden", !message);
+  $("exportLabel").textContent = message || "";
+}
+function xprogress(value) {
+  $("exportBar").style.width = Math.max(0, Math.min(100, value)) + "%";
+}
+
+/* ---------- Rules / selection ---------- */
+
+function ignoreList() {
+  return $("ignoreInput").value.split(",").map(x => x.trim()).filter(Boolean);
+}
+
+function passesRules(file, ignore) {
+  const parts = file.path.split("/");
+  if (!$("optHidden").checked &&
+      parts.some(p => p.startsWith(".") && p.length > 1)) return false;
+  return !parts.some(p => ignore.includes(p));
+}
+
+function selectedFiles() {
+  const ignore = ignoreList();
+  return state.files.filter(f => state.selected.has(f.id) && passesRules(f, ignore));
+}
+
+function sorted(files) {
+  const arr = [...files];
+  const mode = $("sortSelect").value;
+
+  if (mode === "desc") arr.sort((a, b) => b.path.localeCompare(a.path));
+  else if (mode === "size") arr.sort((a, b) => a.size - b.size);
+  else if (mode === "type") arr.sort((a, b) => a.ext.localeCompare(b.ext) || a.path.localeCompare(b.path));
+  else arr.sort((a, b) => a.path.localeCompare(b.path));
+
+  return arr;
+}
+
+function fileIcon(file) {
+  if (file.kind === "image") return "🖼️";
+  if (file.kind === "binary") return "📦";
+
+  const icons = {
+    js:"🟨", html:"🌐", css:"🎨", json:"📋",
+    md:"📝", py:"🐍", pdf:"📕", ts:"🔷", lua:"🌙"
+  };
+
+  return icons[file.ext] || "📄";
+}
+
+function toBase64(bytes) {
+  let output = "";
+  const chunk = 0x8000;
+
+  for (let i = 0; i < bytes.length; i += chunk) {
+    output += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+
+  return btoa(output);
+}
+
+function base64Lines(bytes) {
+  const encoded = toBase64(bytes);
+  const lines = [];
+
+  for (let i = 0; i < encoded.length; i += 76) {
+    lines.push(encoded.slice(i, i + 76));
+  }
+
+  return lines;
+}
+
+/* ---------- IMPORT ---------- */
+
+async function ingest(items, label) {
+  if (!items.length || busy) return;
+  busy = true;
+
+  state.files = [];
+  state.selected.clear();
+  state.activeFile = null;
+
+  istatus("A ler os ficheiros do projeto…");
+  iprogress(0);
+
+  try {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      try {
+        const bytes = item.bytes ||
+          new Uint8Array(await item.file.arrayBuffer());
+
+        const path = (item.path || item.file.name)
+          .replace(/^\/+/, "").replace(/\\/g, "/");
+
+        if (!path) continue;
+
+        const ext = extension(path);
+        const mime = IMAGE_MIME[ext] || "";
+
+        let kind = "text";
+        let text = "";
+
+        if (mime) {
+          kind = "image";
+        } else if (bytes.subarray(0, Math.min(bytes.length, 8192)).includes(0)) {
+          kind = "binary";
+        } else {
+          try {
+            text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+          } catch (e) {
+            text = new TextDecoder("windows-1252").decode(bytes);
+          }
+        }
+
+        const id = state.files.length;
+
+        state.files.push({
+          id, path, ext, kind, size: bytes.length,
+          bytes, text, mime: mime || "application/octet-stream"
+        });
+
+        state.selected.add(id);
+      } catch (error) {
+        console.warn("Não foi possível ler o ficheiro", error);
+      }
+
+      if (i % 15 === 0) {
+        iprogress((i + 1) / items.length * 100);
+        istatus("A ler " + (i + 1) + " / " + items.length + " ficheiros…");
+        await tick();
+      }
+    }
+
+    state.project = label || DEFAULT_PROJECT;
+    $("projectName").value = state.project;
+
+    render();
+    showToast("Importação concluída", state.files.length + " ficheiros importados com sucesso.", "success");
+  } catch (error) {
+    console.error(error);
+    showToast("Erro", "Não foi possível processar o projeto.", "destructive");
+  } finally {
+    busy = false;
+    istatus("");
+    iprogress(0);
+  }
+}
+
+async function loadZip(file) {
+  if (!window.JSZip) {
+    showToast("Erro", "Biblioteca ZIP indisponível. Verifica a ligação.", "destructive");
+    return;
+  }
+
+  istatus("A abrir o arquivo ZIP…");
+
+  try {
+    const zip = await JSZip.loadAsync(file);
+    const entries = [];
+
+    zip.forEach((path, entry) => {
+      if (!entry.dir) entries.push({ path, entry });
+    });
+
+    const paths = entries.map(e => e.path);
+    const root = paths.length ? paths[0].split("/")[0] : "";
+
+    if (root && paths.every(p => p.startsWith(root + "/"))) {
+      entries.forEach(e => e.path = e.path.slice(root.length + 1));
+    }
+
+    const items = [];
+
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+
+      try {
+        const bytes = await e.entry.async("uint8array");
+        items.push({ path: e.path, bytes });
+      } catch (error) {
+        console.warn("Entrada do ZIP ignorada", e.path, error);
+      }
+
+      if (i % 20 === 0) {
+        istatus("A extrair " + (i + 1) + " / " + entries.length + "…");
+        await tick();
+      }
+    }
+
+    await ingest(items, file.name.replace(/\.zip$/i, ""));
+  } catch (error) {
+    console.error(error);
+    istatus("");
+    showToast("Erro", "Ficheiro ZIP inválido ou ilegível.", "destructive");
+  }
+}
+
+/* Recursive read of dropped folders */
+async function readEntry(entry, prefix, out) {
+  if (entry.isFile) {
+    const file = await new Promise((res, rej) => entry.file(res, rej));
+    out.push({ path: prefix + entry.name, file });
+  } else if (entry.isDirectory) {
+    const reader = entry.createReader();
+    let batch;
+    do {
+      batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+      for (const child of batch) {
+        await readEntry(child, prefix + entry.name + "/", out);
+      }
+    } while (batch.length);
+  }
+}
+
+/* ---------- MARKDOWN EXPORT ---------- */
+
+function buildMarkdown() {
+  const files = sorted(selectedFiles());
+  const project = $("projectName").value.trim() || DEFAULT_PROJECT;
+  const lines = [];
+
+  lines.push("---");
+  lines.push("title: " + JSON.stringify(project));
+  lines.push("generated: " + new Date().toISOString());
+  lines.push("file_count: " + files.length);
+  lines.push("---", "");
+  lines.push("# " + project, "");
+  lines.push("> Gerado em " + new Date().toLocaleString());
+  lines.push("> " + files.length + " ficheiros incluídos.", "");
+
+  if ($("optToc").checked) {
+    lines.push("## Índice", "");
+    files.forEach(f => lines.push("- `" + f.path + "`"));
+    lines.push("");
+  }
+
+  if ($("optManifest").checked) {
+    lines.push("## Manifesto de ficheiros", "");
+    lines.push("| Ficheiro | Tipo | Tamanho |");
+    lines.push("| --- | --- | --- |");
+
+    files.forEach(f => {
+      lines.push("| `" + f.path.replace(/\|/g, "\\|") + "` | " + KIND_LABEL[f.kind] + " | " + formatBytes(f.size) + " |");
+    });
+
+    lines.push("");
+  }
+
+  for (const f of files) {
+    lines.push("---", "");
+    lines.push("## `" + f.path + "`", "");
+
+    if (f.kind === "text") {
+      if (["md", "markdown", "mdx"].includes(f.ext)) {
+        lines.push(f.text);
+      } else {
+        const matches = f.text.match(/`{3,}/g) || [];
+        const fence = "`".repeat(
+          Math.max(3, ...matches.map(x => x.length)) + 1
+        );
+
+        lines.push(fence + (LANG[f.ext] || ""));
+        lines.push(f.text);
+        lines.push(fence);
+      }
+    } else if (f.kind === "image") {
+      if ($("optEmbed").checked) {
+        const url = "data:" + f.mime + ";base64," + toBase64(f.bytes);
+        lines.push("![" + basename(f.path) + "](" + url + ")");
+      } else {
+        lines.push("Imagem: " + f.path);
+      }
+    } else if ($("optBinary").checked) {
+      lines.push("_Ficheiro binário · " + formatBytes(f.size) + "_", "");
+      lines.push("```base64");
+      lines.push(...base64Lines(f.bytes));
+      lines.push("```");
+    } else {
+      lines.push("_Ficheiro binário · " + formatBytes(f.size) + " · não incluído_");
+    }
+
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+/* ---------- PLAIN TEXT EXPORT ---------- */
+
+function buildPlainText() {
+  const files = sorted(selectedFiles());
+  const project = $("projectName").value.trim() || DEFAULT_PROJECT;
+  const lines = [];
+
+  const separator = "=".repeat(76);
+  const fileSeparator = "-".repeat(76);
+
+  lines.push(separator);
+  lines.push(project.toUpperCase());
+  lines.push("BUNDLE DO PROJETO - EXPORTAÇÃO EM TEXTO SIMPLES");
+  lines.push(separator);
+  lines.push("");
+  lines.push("Gerado em: " + new Date().toLocaleString());
+  lines.push("Data ISO: " + new Date().toISOString());
+  lines.push("Ficheiros incluídos: " + files.length);
+  lines.push("");
+
+  if ($("optToc").checked) {
+    lines.push(separator);
+    lines.push("ÍNDICE");
+    lines.push(separator);
+
+    files.forEach((f, i) => {
+      lines.push(String(i + 1).padStart(4, "0") + ". " + f.path);
+    });
+
+    lines.push("");
+  }
+
+  if ($("optManifest").checked) {
+    lines.push(separator);
+    lines.push("MANIFESTO DE FICHEIROS");
+    lines.push(separator);
+
+    files.forEach(f => {
+      lines.push(
+        f.path +
+        " | Tipo: " + KIND_LABEL[f.kind] +
+        " | Extensão: " + (f.ext || "nenhuma") +
+        " | Tamanho: " + formatBytes(f.size)
+      );
+    });
+
+    lines.push("");
+  }
+
+  lines.push(separator);
+  lines.push("CONTEÚDO DOS FICHEIROS");
+  lines.push(separator);
+  lines.push("");
+
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+
+    lines.push(fileSeparator);
+    lines.push("FICHEIRO " + (i + 1) + " DE " + files.length);
+    lines.push("NOME: " + f.path);
+    lines.push("TIPO: " + KIND_LABEL[f.kind].toUpperCase());
+    lines.push("TAMANHO: " + formatBytes(f.size));
+    lines.push(fileSeparator);
+    lines.push("");
+
+    if (f.kind === "text") {
+      lines.push("CONTEÚDO:");
+      lines.push("");
+      lines.push(f.text);
+      lines.push("");
+    } else if (f.kind === "image") {
+      lines.push("FICHEIRO DE IMAGEM");
+      lines.push("Nome: " + basename(f.path));
+      lines.push("Tipo MIME: " + f.mime);
+      lines.push("Tamanho: " + formatBytes(f.size));
+      lines.push("O conteúdo binário da imagem não é incluído em texto simples.");
+      lines.push("");
+    } else {
+      lines.push("FICHEIRO BINÁRIO");
+      lines.push("Nome: " + basename(f.path));
+      lines.push("Tamanho: " + formatBytes(f.size));
+
+      if ($("optBinary").checked) {
+        lines.push("");
+        lines.push("CONTEÚDO CODIFICADO EM BASE64:");
+        lines.push(...base64Lines(f.bytes));
+      } else {
+        lines.push("Conteúdo binário omitido. Ativa 'Incluir binários em Base64' para o incluir.");
+      }
+
+      lines.push("");
+    }
+
+    lines.push("");
+  }
+
+  lines.push(separator);
+  lines.push("FIM DO BUNDLE DO PROJETO");
+  lines.push(separator);
+
+  return lines.join("\n");
+}
+
+/* ---------- PREVIEW ---------- */
+
+function renderPreview() {
+  const hasFiles = selectedFiles().length > 0;
+
+  if (!hasFiles) {
+    state.markdown = "";
+    state.plainText = "";
+    $("raw").textContent = "";
+    $("txtPreview").textContent = "O teu documento em texto simples vai aparecer aqui.";
+    $("rendered").innerHTML =
+      '<div class="empty"><b>Nenhum ficheiro selecionado</b>Seleciona ficheiros no explorador para gerar o documento.</div>';
+  } else {
+    state.markdown = buildMarkdown();
+    state.plainText = buildPlainText();
+
+    $("raw").textContent = state.markdown;
+    $("txtPreview").textContent = state.plainText;
+
+    const html = window.marked
+      ? marked.parse(state.markdown)
+      : "<pre>" + escapeHtml(state.markdown) + "</pre>";
+
+    $("rendered").innerHTML = window.DOMPurify
+      ? DOMPurify.sanitize(html)
+      : "<pre>" + escapeHtml(state.markdown) + "</pre>";
+  }
+
+  ["downloadMd", "downloadTxt", "downloadPdf", "downloadZip", "copyMd", "copyTxt"]
+    .forEach(id => { $(id).disabled = !hasFiles; });
+}
+
+let previewTimer = null;
+function schedulePreview() {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(renderPreview, 200);
+}
+
+/* ---------- STATISTICS ---------- */
+
+function renderStats() {
+  const files = selectedFiles();
+
+  $("totalStat").textContent = files.length;
+  $("textStat").textContent = files.filter(f => f.kind === "text").length;
+  $("imageStat").textContent = files.filter(f => f.kind === "image").length;
+
+  $("sizeStat").textContent = formatBytes(
+    files.reduce((sum, f) => sum + f.size, 0)
+  );
+
+  $("fileCount").textContent = files.length + " selecionados de " + state.files.length;
+}
+
+/* ---------- FILE EXPLORER ---------- */
+
+function renderFiles() {
+  const query = $("searchInput").value.toLowerCase().trim();
+  const ignore = ignoreList();
+
+  const files = sorted(state.files).filter(f =>
+    f.path.toLowerCase().includes(query) &&
+    (filterKind === "all" || f.kind === filterKind)
+  );
+
+  if (!state.files.length) {
+    $("fileList").innerHTML =
+      '<div class="empty"><div class="big-ico">📂</div><b>Nenhum projeto carregado</b>Importa um ZIP, uma pasta ou ficheiros para começar.</div>';
+    return;
+  }
+
+  if (!files.length) {
+    $("fileList").innerHTML =
+      '<div class="empty"><b>Nenhum ficheiro corresponde</b>Experimenta outra pesquisa ou filtro.</div>';
+    return;
+  }
+
+  $("fileList").innerHTML = files.map(f => {
+    const ok = passesRules(f, ignore);
+
+    return '<div class="file-row' + (ok ? "" : " dim") + '">' +
+      '<input type="checkbox" data-select="' + f.id + '"' +
+        (state.selected.has(f.id) ? " checked" : "") +
+        ' aria-label="Incluir ' + escapeHtml(f.path) + '">' +
+      '<span class="ficon">' + fileIcon(f) + '</span>' +
+      '<div class="file-info">' +
+        '<div class="fname" title="' + escapeHtml(f.path) + '">' + escapeHtml(basename(f.path)) + '</div>' +
+        '<div class="fpath">' + escapeHtml(f.path) + '</div>' +
+      '</div>' +
+      (ok ? "" : '<span class="badge copy">ignorado</span>') +
+      '<span class="badge ' + f.kind + '">' + KIND_LABEL[f.kind] + '</span>' +
+      '<span class="meta">' + formatBytes(f.size) + '</span>' +
+      '<button class="open-btn" type="button" data-open="' + f.id + '" title="Inspecionar ficheiro">↗</button>' +
+    '</div>';
+  }).join("");
+}
+
+function render() {
+  $("work").classList.toggle("hidden", !state.files.length);
+  renderStats();
+  renderFiles();
+  renderPreview();
+}
+
+/* ---------- INSPECTOR ---------- */
+
+function inspectFile(id) {
+  const f = state.files.find(x => x.id === id);
+  if (!f) return;
+
+  state.activeFile = id;
+
+  if (state.inspectorUrl) {
+    URL.revokeObjectURL(state.inspectorUrl);
+    state.inspectorUrl = null;
+  }
+
+  const el = $("inspector");
+  el.replaceChildren();
+
+  const heading = document.createElement("h3");
+  heading.textContent = f.path;
+  el.appendChild(heading);
+
+  const info = document.createElement("p");
+  info.textContent = "Tipo: " + KIND_LABEL[f.kind] + " | Tamanho: " + formatBytes(f.size);
+  el.appendChild(info);
+
+  if (f.kind === "text") {
+    const pre = document.createElement("pre");
+    pre.textContent = f.text;
+    el.appendChild(pre);
+  } else if (f.kind === "image") {
+    const image = document.createElement("img");
+    image.alt = f.path;
+    image.style.maxWidth = "100%";
+    image.style.maxHeight = "400px";
+    image.style.borderRadius = "10px";
+
+    state.inspectorUrl = URL.createObjectURL(new Blob([f.bytes], { type: f.mime }));
+    image.src = state.inspectorUrl;
+    el.appendChild(image);
+  } else {
+    const message = document.createElement("p");
+    message.textContent = "Ficheiro binário. A pré-visualização do conteúdo não está disponível.";
+    el.appendChild(message);
+  }
+
+  activateTab("inspector");
+  el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+/* ---------- DOWNLOAD HELPERS ---------- */
+
+function download(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function safeFilename() {
+  return ($("projectName").value.trim() || "projeto")
+    .replace(/[\\/:*?"<>|]+/g, "_")
+    .replace(/\s+/g, " ")
+    .slice(0, 80);
+}
+
+function downloadMarkdown() {
+  const content = buildMarkdown();
+
+  download(
+    new Blob(["\uFEFF", content], { type: "text/markdown;charset=utf-8" }),
+    safeFilename() + ".md"
+  );
+
+  showToast("Download", "Markdown exportado com sucesso.", "success");
+}
+
+function downloadTxt() {
+  const content = buildPlainText();
+
+  download(
+    new Blob(["\uFEFF", content], { type: "text/plain;charset=utf-8" }),
+    safeFilename() + ".txt"
+  );
+
+  showToast("Download", "Texto simples exportado com sucesso.", "success");
+}
+
+/* ---------- PDF ---------- */
+
+async function downloadPdf() {
+  if (!window.jspdf) {
+    showToast("Erro", "Biblioteca PDF indisponível. Verifica a ligação.", "destructive");
+    return;
+  }
+
+  const button = $("downloadPdf");
+  button.disabled = true;
+  xprogress(0);
+  xstatus("A gerar o PDF…");
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const files = sorted(selectedFiles());
+
+    const doc = new jsPDF({ unit: "pt", format: "a4", compress: true });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 45;
+    const maxWidth = pageWidth - margin * 2;
+    const bottom = pageHeight - margin;
+
+    let y = margin;
+
+    function ensure(height) {
+      if (y + height > bottom) {
+        doc.addPage();
+        y = margin;
+      }
+    }
+
+    function write(text, options) {
+      options = options || {};
+      const size = options.size || 9;
+      const font = options.font || "helvetica";
+      const style = options.style || "normal";
+      const color = options.color || [35, 42, 55];
+
+      doc.setFont(font, style);
+      doc.setFontSize(size);
+      doc.setTextColor(...color);
+
+      const lines = doc.splitTextToSize(String(text), maxWidth);
+      const step = size * 1.45;
+
+      for (const line of lines) {
+        ensure(step);
+        doc.text(line, margin, y);
+        y += step;
+      }
+
+      y += (options.after === undefined ? 6 : options.after);
+    }
+
+    write($("projectName").value || "Projeto", { size: 21, style: "bold", after: 4 });
+
+    write(
+      "Gerado em " + new Date().toLocaleString() + " | " + files.length + " ficheiros",
+      { size: 9, color: [120, 130, 145] }
+    );
+
+    if ($("optToc").checked) {
+      write("ÍNDICE", { size: 13, style: "bold" });
+      files.forEach(f => write(f.path, { font: "courier", size: 8, after: 2 }));
+    }
+
+    if ($("optManifest").checked) {
+      write("MANIFESTO DE FICHEIROS", { size: 13, style: "bold" });
+      files.forEach(f => {
+        write(
+          f.path + " | " + KIND_LABEL[f.kind] + " | " + formatBytes(f.size),
+          { font: "courier", size: 7.5, after: 2 }
+        );
+      });
+    }
+
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+
+      xstatus("A gerar o PDF: " + (i + 1) + " / " + files.length);
+      xprogress((i + 1) / files.length * 100);
+      await tick();
+
+      ensure(35);
+
+      doc.setDrawColor(205, 212, 225);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 17;
+
+      write(f.path, { font: "courier", style: "bold", size: 9 });
+
+      if (f.kind === "text") {
+        const lines = f.text.split("\n").slice(0, 3000);
+
+        for (const line of lines) {
+          const wrapped = doc.splitTextToSize(line || " ", maxWidth);
+
+          for (const part of wrapped) {
+            ensure(11);
+            doc.setFont("courier", "normal");
+            doc.setFontSize(7.5);
+            doc.setTextColor(45, 50, 60);
+            doc.text(part, margin, y);
+            y += 10;
+          }
+        }
+
+        y += 8;
+      } else {
+        write(
+          (f.kind === "image" ? "Ficheiro de imagem | " : "Ficheiro binário | ") + formatBytes(f.size),
+          { size: 9, color: [110, 120, 135] }
+        );
+      }
+    }
+
+    const pages = doc.getNumberOfPages();
+
+    for (let p = 1; p <= pages; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(130, 140, 155);
+      doc.text(p + " / " + pages, pageWidth / 2, pageHeight - 20, { align: "center" });
+    }
+
+    doc.save(safeFilename() + ".pdf");
+    showToast("Download", "PDF exportado com sucesso.", "success");
+  } catch (error) {
+    console.error(error);
+    showToast("Erro", "Falha ao gerar o PDF: " + error.message, "destructive");
+  } finally {
+    xstatus("");
+    xprogress(0);
+    button.disabled = selectedFiles().length === 0;
+  }
+}
+
+/* ---------- ZIP ---------- */
+
+async function downloadZip() {
+  if (!window.JSZip) {
+    showToast("Erro", "Biblioteca ZIP indisponível. Verifica a ligação.", "destructive");
+    return;
+  }
+
+  const files = selectedFiles();
+  if (!files.length) return;
+
+  const zip = new JSZip();
+  files.forEach(f => zip.file(f.path, f.bytes));
+
+  const button = $("downloadZip");
+  button.disabled = true;
+  xprogress(0);
+  xstatus("A criar o arquivo ZIP…");
+
+  try {
+    const blob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 }
+    }, metadata => {
+      xprogress(metadata.percent);
+      xstatus("A comprimir: " + Math.round(metadata.percent) + "%");
+    });
+
+    download(blob, safeFilename() + "-export.zip");
+    showToast("Download", "ZIP exportado com sucesso.", "success");
+  } catch (error) {
+    console.error(error);
+    showToast("Erro", "Falha ao gerar o ZIP.", "destructive");
+  } finally {
+    xstatus("");
+    xprogress(0);
+    button.disabled = selectedFiles().length === 0;
+  }
+}
+
+/* ---------- CLIPBOARD ---------- */
+
+async function copyContent(content, message) {
+  try {
+    await navigator.clipboard.writeText(content);
+    showToast("Copiado", message, "success");
+  } catch (error) {
+    console.error(error);
+    showToast("Erro", "Área de transferência indisponível. Seleciona e copia a partir da pré-visualização.", "destructive");
+  }
+}
+
+/* ---------- TABS ---------- */
+
+function activateTab(target) {
+  document.querySelectorAll(".tab-btn").forEach(tab => {
+    tab.classList.toggle("active", tab.dataset.tab === target);
+  });
+
+  ["rendered", "txtPreview", "raw", "inspector"].forEach(id => {
+    $(id).classList.toggle("hidden", id !== target);
+  });
+}
+
+/* ---------- EVENTS ---------- */
+
+/* Import pickers */
+$("pickFilesBtn").addEventListener("click", () => $("filesInput").click());
+$("pickFolderBtn").addEventListener("click", () => $("folderInput").click());
+$("pickZipBtn").addEventListener("click", () => $("zipInput").click());
+
+$("zipInput").addEventListener("change", async e => {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (file) await loadZip(file);
+});
+
+$("folderInput").addEventListener("change", async e => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+
+  if (files.length) {
+    const items = files.map(f => ({
+      path: f.webkitRelativePath || f.name,
+      file: f
+    }));
+
+    const root = files[0].webkitRelativePath
+      ? files[0].webkitRelativePath.split("/")[0]
+      : "Pasta";
+
+    await ingest(items, root);
+  }
+});
+
+$("filesInput").addEventListener("change", async e => {
+  const files = Array.from(e.target.files || []);
+  e.target.value = "";
+
+  if (files.length) {
+    await ingest(files.map(f => ({ path: f.name, file: f })), "Ficheiros selecionados");
+  }
+});
+
+/* Drag and drop (files, ZIP and whole folders) */
+const dropZone = $("dropzone");
+
+dropZone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropZone.classList.add("drag-over");
+});
+
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("drag-over");
+});
+
+dropZone.addEventListener("drop", async e => {
+  e.preventDefault();
+  dropZone.classList.remove("drag-over");
+
+  const dt = e.dataTransfer;
+  if (!dt) return;
+
+  const entries = Array.from(dt.items || [])
+    .map(item => (item.kind === "file" && item.webkitGetAsEntry) ? item.webkitGetAsEntry() : null)
+    .filter(Boolean);
+  const plainFiles = Array.from(dt.files || []);
+
+  if (plainFiles.length === 1 && /\.zip$/i.test(plainFiles[0].name)) {
+    await loadZip(plainFiles[0]);
+    return;
+  }
+
+  if (entries.length) {
+    try {
+      istatus("A ler os itens largados…");
+      const items = [];
+      for (const entry of entries) await readEntry(entry, "", items);
+
+      const label = (entries.length === 1 && entries[0].isDirectory)
+        ? entries[0].name
+        : "Ficheiros largados";
+
+      await ingest(items, label);
+    } catch (error) {
+      console.error(error);
+      istatus("");
+      showToast("Erro", "Não foi possível ler os itens largados.", "destructive");
+    }
+    return;
+  }
+
+  if (plainFiles.length) {
+    await ingest(
+      plainFiles.map(f => ({ path: f.webkitRelativePath || f.name, file: f })),
+      "Ficheiros largados"
+    );
+  }
+});
+
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => e.preventDefault());
+
+/* Explorer */
+$("fileList").addEventListener("change", e => {
+  if (!e.target.matches("[data-select]")) return;
+
+  const id = Number(e.target.dataset.select);
+
+  if (e.target.checked) state.selected.add(id);
+  else state.selected.delete(id);
+
+  renderStats();
+  schedulePreview();
+  renderFiles();
+});
+
+$("fileList").addEventListener("click", e => {
+  const button = e.target.closest("[data-open]");
+  if (button) inspectFile(Number(button.dataset.open));
+});
+
+$("searchInput").addEventListener("input", renderFiles);
+
+$("filters").addEventListener("click", e => {
+  const chip = e.target.closest("[data-filter]");
+  if (!chip) return;
+
+  filterKind = chip.dataset.filter;
+  document.querySelectorAll("#filters .chip").forEach(c => {
+    c.classList.toggle("active", c === chip);
+  });
+  renderFiles();
+});
+
+/* Project name / ignore rules / sorting / options */
+$("projectName").addEventListener("input", schedulePreview);
+
+$("ignoreInput").addEventListener("input", () => {
+  renderStats();
+  renderFiles();
+  schedulePreview();
+});
+
+$("sortSelect").addEventListener("change", render);
+
+["optEmbed", "optToc", "optManifest", "optBinary", "optHidden"].forEach(id => {
+  $(id).addEventListener("change", render);
+});
+
+/* Selection tools */
+$("selectAll").addEventListener("click", () => {
+  state.files.forEach(f => state.selected.add(f.id));
+  render();
+});
+
+$("selectNone").addEventListener("click", () => {
+  state.selected.clear();
+  render();
+});
+
+$("selectInvert").addEventListener("click", () => {
+  state.files.forEach(f => {
+    if (state.selected.has(f.id)) state.selected.delete(f.id);
+    else state.selected.add(f.id);
+  });
+  render();
+});
+
+/* Tabs */
+document.querySelectorAll(".tab-btn").forEach(tab => {
+  tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+});
+
+/* Export buttons */
+$("downloadMd").addEventListener("click", downloadMarkdown);
+$("downloadTxt").addEventListener("click", downloadTxt);
+$("downloadPdf").addEventListener("click", downloadPdf);
+$("downloadZip").addEventListener("click", downloadZip);
+
+$("copyMd").addEventListener("click", () => copyContent(buildMarkdown(), "Markdown copiado!"));
+$("copyTxt").addEventListener("click", () => copyContent(buildPlainText(), "Texto simples copiado!"));
+
+/* Reset */
+$("resetBtn").addEventListener("click", () => {
+  if (state.files.length && !confirm("Limpar o projeto atual?")) return;
+
+  clearTimeout(previewTimer);
+
+  if (state.inspectorUrl) {
+    URL.revokeObjectURL(state.inspectorUrl);
+    state.inspectorUrl = null;
+  }
+
+  state.files = [];
+  state.selected.clear();
+  state.activeFile = null;
+  state.markdown = "";
+  state.plainText = "";
+  filterKind = "all";
+
+  $("searchInput").value = "";
+  $("projectName").value = DEFAULT_PROJECT;
+  $("inspector").textContent = "Seleciona um ficheiro no explorador para o inspecionar.";
+  document.querySelectorAll("#filters .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.filter === "all");
+  });
+
+  activateTab("rendered");
+  render();
+  showToast("Projeto limpo", "Podes importar novos ficheiros.");
+});
+
+/* INIT */
+$("inspector").textContent = "Seleciona um ficheiro no explorador para o inspecionar.";
+render();
+
+})();
+<\/script>
+</body>
+</html></script>
+
+<script>
+(function () {
+  var APPS = {
+    shx: { title: "Cleaner SHX v4", source: "src-shx" },
+    comments: { title: "Cleaner (Remove Comentários)", source: "src-comments" },
+    bundle: { title: "Bundle Studio", source: "src-bundle" }
+  };
+  var home = document.getElementById("home");
+  var viewer = document.getElementById("viewer");
+  var frames = document.getElementById("frames");
+  var crumb = document.getElementById("crumbName");
+  var built = {};
+  var current = null;
+
+  function readSource(id) {
+    return document.getElementById(id).textContent.replace(/<\\\/script/g, "<" + "/script");
+  }
+
+  function ensureFrame(key) {
+    if (built[key]) return built[key];
+    var f = document.createElement("iframe");
+    f.title = APPS[key].title;
+    f.setAttribute("allow", "clipboard-write; clipboard-read");
+    f.className = "hidden";
+    f.addEventListener("load", function () {
+      try {
+        f.contentDocument.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape" && current === key) goHome();
+        });
+      } catch (e) {}
+    });
+    f.srcdoc = readSource(APPS[key].source);
+    frames.appendChild(f);
+    built[key] = f;
+    return f;
+  }
+
+  function showHome() {
+    current = null;
+    Object.keys(built).forEach(function (k) { built[k].classList.add("hidden"); });
+    viewer.classList.add("hidden");
+    home.classList.remove("hidden");
+    window.scrollTo(0, 0);
+  }
+
+  function showApp(key) {
+    if (!APPS[key]) { showHome(); return; }
+    var f = ensureFrame(key);
+    Object.keys(built).forEach(function (k) { built[k].classList.toggle("hidden", k !== key); });
+    crumb.textContent = APPS[key].title;
+    document.title = APPS[key].title + " — MIST Cleaner Suite";
+    home.classList.add("hidden");
+    viewer.classList.remove("hidden");
+    current = key;
+    try { f.focus(); } catch (e) {}
+  }
+
+  function route() {
+    var key = (location.hash || "").replace("#", "");
+    if (APPS[key]) showApp(key);
+    else { document.title = "MIST Cleaner Suite"; showHome(); }
+  }
+
+  function goApp(key) { location.hash = key; }
+  function goHome() {
+    if (location.hash) {
+      history.pushState("", document.title, location.pathname + location.search);
+    }
+    route();
+  }
+
+  document.getElementById("chooseShx").addEventListener("click", function () { goApp("shx"); });
+  document.getElementById("chooseComments").addEventListener("click", function () { goApp("comments"); });
+  document.getElementById("chooseBundle").addEventListener("click", function () { goApp("bundle"); });
+  document.getElementById("homeBtn").addEventListener("click", goHome);
+  window.addEventListener("hashchange", route);
+  window.addEventListener("popstate", route);
+  window.addEventListener("message", function (ev) {
+    if (ev.data && ev.data.type === "mist-home") goHome();
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && current) goHome();
+  });
+
+  route();
+})();
+</script>
+</body>
+</html>
